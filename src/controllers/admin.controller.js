@@ -702,10 +702,11 @@ const adminController = {
         }
     },
 
-    // Approve Deposit
+    // Approve Deposit (Stage 3: Verification)
     approveDeposit: async (req, res) => {
         try {
             const { transactionId } = req.params;
+            const { verifiedAmount } = req.body; // Amount Verification
 
             const transaction = await Transaction.findById(transactionId).populate('user');
             if (!transaction) {
@@ -716,17 +717,32 @@ const adminController = {
                 return res.status(400).json({ message: 'Deposit already processed' });
             }
 
-            // Update user balance
-            const user = await User.findById(transaction.user._id);
-            user.totalBalance += transaction.amount;
-            await user.save();
-
-            // Update transaction status
+            // Trust verified amount if provided, otherwise fallback to original request (but warned)
+            const finalAmount = verifiedAmount !== undefined ? parseFloat(verifiedAmount) : transaction.amount;
+            
+            // Update Transaction
+            transaction.amount = finalAmount; // Update to actual received amount
             transaction.status = 'Completed';
-            transaction.description = `${transaction.description} - Approved by admin`;
+            transaction.description = `${transaction.description} - Verified & Approved by Admin`;
+            transaction.verifiedAt = new Date();
+            transaction.verifiedBy = req.user.id;
             await transaction.save();
 
-            res.json({ message: 'Deposit approved successfully', transaction });
+            // Credit User Balance
+            const user = await User.findById(transaction.user._id);
+            user.totalBalance += finalAmount;
+            await user.save();
+
+            // Log security event
+            await logSecurityEvent({
+                user: req.user.id,
+                action: 'DEPOSIT_APPROVAL',
+                details: `Approved deposit ${transaction.reference} for amount ${finalAmount}`,
+                status: 'success',
+                req
+            });
+
+            res.json({ message: 'Deposit approved and credited', transaction });
         } catch (err) {
             console.error(err);
             res.status(500).json({ message: 'Error approving deposit' });

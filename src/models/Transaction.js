@@ -36,7 +36,16 @@ const transactionSchema = new mongoose.Schema({
     },
     unlockDate: { // For referral rewards maturation
         type: Date
-    }
+    },
+    // Payment Verification Fields
+    proofUrl: String,
+    verifiedAt: Date,
+    verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    requestedAmount: Number, // Original amount user asked for (if different from final verified amount)
+    gatewayReference: String // External reference (Paystack ID, etc)
 });
 
 // Optimization Indexes

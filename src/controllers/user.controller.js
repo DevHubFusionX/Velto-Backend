@@ -272,7 +272,7 @@ const userController = {
     },
 
     deposit: async (req, res) => {
-        const { amount, method, currency } = req.body;
+        const { amount, method, currency, proofUrl } = req.body;
         const numAmount = parseFloat(amount);
 
         try {
@@ -291,18 +291,21 @@ const userController = {
             const user = await User.findById(req.user.id);
             
             // Create Transaction with Pending status
+            // Stage 1: Initiation
             const transaction = await Transaction.create({
                 user: user._id,
                 type: 'Deposit',
                 amount: numAmount,
+                requestedAmount: numAmount, // Store original request
                 currency,
-                status: 'Pending', // Changed from 'Completed' to 'Pending'
+                status: 'Pending', 
                 reference: `DEP-${Date.now()}`,
                 method,
-                description: `Deposit via ${method} - Awaiting confirmation`
+                description: `Deposit via ${method} - Awaiting confirmation`,
+                proofUrl // Stage 2: Confirmation (if provided immediately)
             });
 
-            // DO NOT update balance yet - will be updated after admin approval
+            // Do NOT update balance yet. Waiting for Stage 3 (Verification)
 
             res.json({
                 message: 'Deposit request submitted. Awaiting confirmation.',
