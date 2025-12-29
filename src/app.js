@@ -24,7 +24,7 @@ app.use(cors({
   origin: [
     'http://localhost:5173', 
     'http://localhost:5174', 
-    'https://velto-black.vercel.app',
+    'https://velto-steel.vercel.app',
     'https://admin-velto.vercel.app',
     process.env.FRONTEND_URL
   ].filter(Boolean),
