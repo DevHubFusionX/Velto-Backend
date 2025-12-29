@@ -16,10 +16,21 @@ startCronOnly();
 
 const app = express();
 
+// Trust proxy for Render/Vercel
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', process.env.FRONTEND_URL].filter(Boolean),
-  credentials: true
+  origin: [
+    'http://localhost:5173', 
+    'http://localhost:5174', 
+    'https://velto-black.vercel.app',
+    'https://admin-velto.vercel.app',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 
 // Set security headers
