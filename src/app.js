@@ -96,6 +96,7 @@ app.use('/api/opportunities', require('./routes/opportunity.routes.js'));
 app.use('/api/community', require('./routes/community.routes.js'));
 app.use('/api/admin', require('./routes/admin.routes.js'));
 app.use('/api/payments', require('./routes/payment.routes.js'));
+app.use('/api/upload', require('./routes/upload.routes.js'));
 
 // Custom Error Handler
 const errorHandler = require('./middleware/error');
