@@ -1,0 +1,193 @@
+const mockData = {
+  user: {
+    id: '1',
+    email: 'user@example.com',
+    password: 'password',
+    name: 'John Doe',
+    phone: '+234 812 345 6789',
+    location: 'Lagos, Nigeria',
+    joinDate: 'January 2024',
+    bio: 'Loves safe investments',
+    avatar: 'JD'
+  },
+  platformSettings: {
+    limits: {
+      deposit: {
+        min: { ngn: 1000, usd: 10 },
+        max: { ngn: 10000000, usd: 10000 }
+      },
+      withdrawal: {
+        min: { ngn: 2000, usd: 20 },
+        max: { ngn: 5000000, usd: 5000 }
+      },
+      totalPersonalInvestmentLimit: { ngn: 50000000, usd: 50000 }
+    },
+    maintenanceMode: false
+  },
+  dashboard: {
+    totalBalance: 1250000,
+    totalInvested: 2400000,
+    totalReturns: 456000,
+    totalReturnPercentage: 18.5,
+    allocationPercentages: [
+      { name: 'Real Estate', value: 45, color: '#a3e635' },
+      { name: 'Tech Stocks', value: 30, color: '#84cc16' },
+      { name: 'Agriculture', value: 15, color: '#65a30d' },
+      { name: 'Crypto', value: 10, color: '#4d7c0f' }
+    ],
+    historicalGrowth: [
+      { date: '2024-01', balance: 1800000, returns: 120000 },
+      { date: '2024-02', balance: 1950000, returns: 180000 },
+      { date: '2024-03', balance: 2100000, returns: 250000 },
+      { date: '2024-04', balance: 2050000, returns: 230000 },
+      { date: '2024-05', balance: 2250000, returns: 380000 },
+      { date: '2024-06', balance: 2400000, returns: 456000 }
+    ],
+    referrals: {
+      code: 'VELTO-JD-2024',
+      totalEarned: 25000,
+      count: 12,
+      history: [
+        { name: 'Alice Smith', date: 'Oct 10, 2024', status: 'Active', bonus: 2500 },
+        { name: 'Bob Wilson', date: 'Oct 08, 2024', status: 'Pending', bonus: 0 },
+        { name: 'Charlie Davis', date: 'Oct 05, 2024', status: 'Active', bonus: 2500 },
+        { name: 'Diana Ross', date: 'Sep 30, 2024', status: 'Active', bonus: 2500 }
+      ]
+    },
+    supportTickets: [
+      { id: 'TIC-9821', subject: 'Deposit not reflecting', status: 'Open', lastUpdate: '2 hours ago', category: 'Finance', messages: 2 },
+      { id: 'TIC-7732', subject: 'KYC Verification', status: 'Resolved', lastUpdate: '1 day ago', category: 'Account', messages: 4 },
+      { id: 'TIC-5541', subject: 'Referral Bonus Issue', status: 'Resolved', lastUpdate: '3 days ago', category: 'Rewards', messages: 3 }
+    ],
+    activeInvestments: [
+      {
+        id: 'inv1',
+        product: 'Real Estate Fund',
+        startDate: '2024-01-15',
+        maturityDate: '2025-01-15',
+        status: 'Active',
+        amount: 1200000,
+        currentValue: 1350000,
+        returns: '+12.5%',
+        progress: 65,
+        color: '#a3e635',
+        duration: '12 Months'
+      },
+      {
+        id: 'inv2',
+        product: 'Tech Growth ETF',
+        startDate: '2024-02-10',
+        maturityDate: '2026-02-10',
+        status: 'Active',
+        amount: 800000,
+        currentValue: 896000,
+        returns: '+12%',
+        progress: 40,
+        color: '#60a5fa',
+        duration: '24 Months'
+      }
+    ],
+    notifications: [
+      { id: '1', title: 'Welcome to the Platform!', message: 'Start your investment journey today.', read: false, type: 'success', time: '2 hours ago' },
+      { id: '2', title: 'New Opportunity Alert', message: 'High-growth tech fund is now open.', read: false, type: 'info', time: '5 hours ago' }
+    ],
+    marketData: [
+      { symbol: 'BTC/USD', price: '64,231.50', change: '+2.4%', up: true },
+      { symbol: 'ETH/USD', price: '3,452.12', change: '-1.2%', up: false },
+      { symbol: 'S&P 500', price: '5,231.10', change: '+0.8%', up: true },
+      { symbol: 'NGN/USD', price: '1,520.00', change: '+0.1%', up: true },
+      { symbol: 'GOLD', price: '2,341.20', change: '-0.3%', up: false },
+      { symbol: 'APPLE', price: '182.45', change: '+1.5%', up: true },
+      { symbol: 'TESLA', price: '175.20', change: '-2.1%', up: false },
+    ],
+    recentTransactions: [
+      { id: 'tx1', type: 'Deposit', date: 'Oct 12, 2024', amount: 50000, status: 'Completed', reference: 'FLW-12345678', method: 'Card' },
+      { id: 'tx2', type: 'Investment', date: 'Oct 10, 2024', amount: -400000, status: 'Completed', reference: 'INV-TRK-9876', product: 'Real Estate Fund' },
+      { id: 'tx3', type: 'Withdrawal', date: 'Oct 05, 2024', amount: -25000, status: 'Completed', reference: 'WTH-BK-4567', bank: 'GTBank' },
+      { id: 'tx4', type: 'Deposit', date: 'Sep 28, 2024', amount: 100000, status: 'Completed', reference: 'FLW-87654321', method: 'Transfer' },
+      { id: 'tx5', type: 'Investment', date: 'Sep 25, 2024', amount: -500000, status: 'Completed', reference: 'INV-TRK-1234', product: 'Tech Growth ETF' },
+      { id: 'tx6', type: 'Withdrawal', date: 'Sep 15, 2024', amount: -15000, status: 'Failed', reference: 'WTH-BK-9999', bank: 'Zenith Bank', reason: 'Invalid account number' },
+      { id: 'tx7', type: 'Withdrawal', date: 'Oct 15, 2024', amount: -50000, status: 'Pending', reference: 'WTH-BK-9001', bank: 'Access Bank' },
+      { id: 'tx8', type: 'Withdrawal', date: 'Oct 14, 2024', amount: -120000, status: 'Pending', reference: 'WTH-BK-9002', bank: 'UBA' }
+    ]
+  },
+  products: [
+    {
+      id: 'p1',
+      name: 'Safe Haven Treasury',
+      type: 'Fixed Income',
+      color: '#a3e635',
+      returns: '15% p.a',
+      roiPercent: 15,
+      roiType: 'Fixed',
+      durationDays: 365,
+      payoutFrequency: 'End of term',
+      minAmount: { ngn: 50000, usd: 50 },
+      maxAmount: { ngn: 5000000, usd: 5000 },
+      risk: 'Low Risk',
+      status: 'active'
+    },
+    {
+      id: 'p2',
+      name: 'Global Real Estate',
+      type: 'Property',
+      color: '#60a5fa',
+      returns: '25% p.a',
+      roiPercent: 25,
+      roiType: 'Variable',
+      durationDays: 730,
+      payoutFrequency: 'Quarterly',
+      minAmount: { ngn: 250000, usd: 250 },
+      maxAmount: { ngn: 25000000, usd: 25000 },
+      risk: 'Medium Risk',
+      status: 'active'
+    }
+  ],
+  opportunities: [
+    {
+      id: 'o1',
+      title: 'Premium City Real Estate',
+      description: 'Invest in high-yield commercial properties in prime locations.',
+      category: 'real-estate',
+      returns: '28% p.a',
+      roiPercent: 28,
+      roiType: 'Fixed',
+      durationDays: 540,
+      payoutFrequency: 'Monthly',
+      minAmount: { ngn: 500000, usd: 500 },
+      maxAmount: { ngn: 100000000, usd: 100000 },
+      minInvestment: { ngn: '₦500,000', usd: '$500' }, // Kept for frontend fallback
+      spotsLeft: 8,
+      totalSpots: 50,
+      trending: true,
+      color: '#60a5fa',
+      risk: 'Medium Risk',
+      status: 'active'
+    }
+  ],
+  notifications: [
+    { id: '1', title: 'Welcome to the Platform!', message: 'Start your investment journey today.', read: false, type: 'success', time: '2 hours ago' },
+    { id: '2', title: 'New Opportunity Alert', message: 'High-growth tech fund is now open.', read: false, type: 'info', time: '5 hours ago' }
+  ],
+  posts: [
+    {
+      id: 1,
+      author: 'Sarah Johnson',
+      avatar: 'SJ',
+      role: 'Top Investor',
+      time: '2h ago',
+      content: 'Just hit 25% ROI on my real estate portfolio! The key is diversification and patience.',
+      likes: 124,
+      comments: 18,
+      shares: 7,
+      trending: true
+    }
+  ],
+  kycApprovals: [
+    { id: 'kyc1', user: 'John_Doe', status: 'Pending', submittedAt: '2024-10-12T10:30:00Z' },
+    { id: 'kyc2', user: 'Aisha_Patel', status: 'Pending', submittedAt: '2024-10-11T14:20:00Z' },
+    { id: 'kyc3', user: 'Mark_Smith', status: 'Pending', submittedAt: '2024-10-10T09:15:00Z' },
+  ]
+};
+
+module.exports = mockData;

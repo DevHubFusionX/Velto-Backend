@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  location  String?
+  bio       String?
+  avatar    String?
+  joinDate  String?
+  role      String   @default("user")
+  balance   Float    @default(0)
+  
+  investments   Investment[]
+  transactions  Transaction[]
+  notifications Notification[]
+  tickets       SupportTicket[]
+  logs          ActionLog[]
+}
+
+model Investment {
+  id              String   @id @default(uuid())
+  userId          String
+  productId       String?
+  productName     String
+  amount          Float
+  startDate       DateTime
+  maturityDate    DateTime
+  status          String   @default("Active")
+  currentValue    Float
+  returns         String?
+  progress        Int?
+  color           String?
+  durationDays    Int?
+  payoutFrequency String?
+  roiType         String?
+  roiPercent      Float?
+  
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  amount    Float
+  date      DateTime @default(now())
+  status    String
+  reference String   @unique
+  method    String?
+  bank      String?
+  reason    String?
+  product   String?
+  
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Product {
+  id              String   @id @default(uuid())
+  name            String
+  type            String
+  color           String
+  returns         String
+  roiPercent      Float
+  roiType         String
+  durationDays    Int
+  payoutFrequency String
+  minAmount       String // JSON string
+  maxAmount       String // JSON string
+  risk            String
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  type      String
+  time      DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id])
+}
+
+model SupportTicket {
+  id         String   @id @default(uuid())
+  userId     String
+  subject    String
+  status     String
+  lastUpdate DateTime @default(now())
+  category   String
+  messages   Int      @default(0)
+  
+  user User @relation(fields: [userId], references: [id])
+}
+
+model PlatformSettings {
+  id              Int     @id @default(1)
+  maintenanceMode Boolean @default(false)
+  depositLimits   String // JSON
+  withdrawalLimits String // JSON
+}
+
+model KYCApproval {
+  id          String    @id @default(uuid())
+  userId      String // Storing as string relationally or just reference? db.json had "user": "John_Doe" (name). 
+                       // We should probably link to User.id but legacy data has names. 
+                       // For now, we'll keep it as a string to match legacy, or better, try to map it.
+                       // Let's store the raw user string from legacy, but in future use real relation.
+  user        String    // Legacy username/name
+  status      String
+  submittedAt DateTime
+  approvedAt  DateTime?
+  rejectedAt  DateTime?
+}
+
+model ActionLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  details   String?
+  timestamp DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
