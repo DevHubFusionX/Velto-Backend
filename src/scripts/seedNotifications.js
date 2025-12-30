@@ -11,7 +11,7 @@ async function seedNotifications() {
 
         // Get the first user (you can modify this to target a specific user)
         const user = await User.findOne();
-        
+
         if (!user) {
             console.log('No users found. Please create a user first.');
             process.exit(1);
@@ -32,7 +32,7 @@ async function seedNotifications() {
             {
                 user: user._id,
                 title: 'Deposit Approved',
-                message: 'Your deposit of ₦50,000 has been approved and credited to your account.',
+                message: 'Your deposit of $50 has been approved and credited to your account.',
                 type: 'deposit',
                 read: false,
                 createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000) // 5 hours ago
@@ -48,7 +48,7 @@ async function seedNotifications() {
             {
                 user: user._id,
                 title: 'Daily Payout Received',
-                message: 'You received ₦2,500 as daily payout from your Premium Plan investment.',
+                message: 'You received $5.00 as daily payout from your Premium Plan investment.',
                 type: 'info',
                 read: true,
                 createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // 2 days ago
@@ -56,7 +56,7 @@ async function seedNotifications() {
             {
                 user: user._id,
                 title: 'Withdrawal Pending',
-                message: 'Your withdrawal request of ₦25,000 is being processed. Expected completion in 24 hours.',
+                message: 'Your withdrawal request of $25.00 is being processed. Expected completion in 24 hours.',
                 type: 'warning',
                 read: false,
                 createdAt: new Date(Date.now() - 30 * 60 * 1000) // 30 minutes ago
@@ -64,7 +64,7 @@ async function seedNotifications() {
             {
                 user: user._id,
                 title: 'Referral Bonus',
-                message: 'You earned ₦2,500 referral bonus! Your friend just made their first investment.',
+                message: 'You earned $5.00 referral bonus! Your friend just made their first investment.',
                 type: 'success',
                 read: false,
                 createdAt: new Date(Date.now() - 10 * 60 * 1000) // 10 minutes ago

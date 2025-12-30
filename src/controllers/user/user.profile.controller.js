@@ -111,8 +111,8 @@ const profileController = {
                 name: plan.name,
                 type: plan.type,
                 description: plan.description,
-                minInvestment: { usd: plan.minAmount, ngn: plan.minAmount },
-                maxInvestment: { usd: plan.maxAmount, ngn: plan.maxAmount },
+                minInvestment: { usd: plan.minAmount },
+                maxInvestment: { usd: plan.maxAmount },
                 minAmount: plan.minAmount,
                 maxAmount: plan.maxAmount,
                 dailyPayout: plan.dailyPayout,
@@ -185,7 +185,7 @@ const profileController = {
 
                 return {
                     symbol: displayName,
-                    price: `₦${Math.abs(w.amount).toLocaleString()}`,
+                    price: `$${Math.abs(w.amount).toLocaleString()}`,
                     change: timeAgo,
                     up: true
                 };
@@ -193,11 +193,11 @@ const profileController = {
 
             if (marketData.length === 0) {
                 marketData = [
-                    { symbol: 'Chinedu O.', price: '₦150,000', change: 'JUST NOW', up: true },
-                    { symbol: 'Sarah A.', price: '₦85,000', change: '2m ago', up: true },
-                    { symbol: 'David K.', price: '₦220,000', change: '5m ago', up: true },
-                    { symbol: 'Blessing E.', price: '₦12,500', change: '8m ago', up: true },
-                    { symbol: 'Tunde W.', price: '₦410,000', change: '15m ago', up: true }
+                    { symbol: 'Chinedu O.', price: '$850.00', change: 'JUST NOW', up: true },
+                    { symbol: 'Sarah A.', price: '$120.00', change: '2m ago', up: true },
+                    { symbol: 'David K.', price: '$2,450.00', change: '5m ago', up: true },
+                    { symbol: 'Blessing E.', price: '$45.00', change: '8m ago', up: true },
+                    { symbol: 'Tunde W.', price: '$1,200.00', change: '15m ago', up: true }
                 ];
             }
 

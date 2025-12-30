@@ -16,7 +16,7 @@ const transactionSchema = new mongoose.Schema({
     },
     currency: {
         type: String,
-        default: 'NGN'
+        default: 'USD' // Internal base currency for crypto value tracking
     },
     status: {
         type: String,
@@ -45,7 +45,29 @@ const transactionSchema = new mongoose.Schema({
         ref: 'User'
     },
     requestedAmount: Number, // Original amount user asked for (if different from final verified amount)
-    gatewayReference: String // External reference (Paystack ID, etc)
+    gatewayReference: String, // External reference (Paystack ID, etc)
+
+    // Crypto Transaction Fields
+    isCrypto: {
+        type: Boolean,
+        default: false
+    },
+    cryptoCurrency: {
+        type: String,
+        enum: ['BTC', 'ETH', 'BNB', 'LTC', 'USDT_TRC20', 'USDT_ERC20', null],
+        default: null
+    },
+    cryptoAmount: Number, // Amount in cryptocurrency
+    cryptoAddress: String, // Destination wallet address (for withdrawals)
+    txHash: String, // Blockchain transaction hash
+    network: String, // Blockchain network (Bitcoin, Ethereum, BEP20, etc.)
+
+    // NOWPayments Specific Fields
+    paymentId: String,
+    payAddress: String,
+    payAmount: Number,
+    actuallyPaid: Number,
+    paymentStatus: String
 });
 
 // Optimization Indexes

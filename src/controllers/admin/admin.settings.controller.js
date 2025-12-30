@@ -10,24 +10,22 @@ const settingsController = {
                     maintenanceMode: false,
                     limits: {
                         deposit: {
-                            min: { usd: 100, ngn: 100000 },
-                            max: { usd: 100000, ngn: 100000000 }
+                            min: { usd: 10 },
+                            max: { usd: 100000 }
                         },
                         withdrawal: {
-                            min: { usd: 50, ngn: 50000 },
-                            max: { usd: 50000, ngn: 50000000 }
+                            min: { usd: 20 },
+                            max: { usd: 50000 }
                         }
                     },
                     referral: {
                         rewardPercent: 3,
                         maxRewardPerReferral: 5000,
                         maxReferralsLifetime: 50,
-                        maxEarningsLifetime: 100000,
+                        maxEarningsLifetime: 10000,
                         unlockDays: 14,
                         activeInvestmentRequired: true
                     },
-                    referralBonus: 2500,
-                    updatedAt: Date.now()
                 });
             } else if (!settings.referral) {
                 settings.referral = {

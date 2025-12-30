@@ -20,4 +20,10 @@ router.post('/investments/:investmentId/withdraw', userController.withdrawInvest
 router.get('/investments/payouts/history', userController.getPayoutHistory);
 router.get('/settings', userController.getSettings);
 
+// Crypto Routes
+router.get('/crypto/wallets', userController.getMyWallets);
+router.get('/crypto/deposit-addresses', userController.getDepositAddresses);
+router.post('/crypto/deposit', userController.initiateCryptoDeposit);
+router.post('/crypto/withdraw', userController.requestCryptoWithdrawal);
+
 module.exports = router;

@@ -1,5 +1,6 @@
 const User = require('../../models/User');
 const KYC = require('../../models/KYC');
+const UserCryptoWallet = require('../../models/UserCryptoWallet');
 const { sendVerificationEmail, sendWelcomeEmail } = require('../../services/emailService');
 const { generateToken } = require('./auth.login.controller');
 
@@ -38,6 +39,15 @@ const registerController = {
                 referralCode: myReferralCode,
                 referredBy
             });
+
+            // Create crypto wallets for the new user
+            try {
+                await UserCryptoWallet.createWalletsForUser(user._id);
+                console.log('[REGISTER] ✅ Crypto wallets created for user:', user.email);
+            } catch (walletError) {
+                console.error('[REGISTER] ⚠️ Failed to create crypto wallets:', walletError.message);
+                // Non-blocking - user can still register
+            }
 
             await KYC.create({
                 user: user._id,

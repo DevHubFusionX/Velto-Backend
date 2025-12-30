@@ -22,8 +22,8 @@ app.set('trust proxy', 1);
 // Middleware
 app.use(cors({
   origin: [
-    'http://localhost:5173', 
-    'http://localhost:5174', 
+    'http://localhost:5173',
+    'http://localhost:5174',
     'https://velto-theta.vercel.app',
     'https://velto-management.vercel.app',
     process.env.FRONTEND_URL
@@ -47,19 +47,19 @@ app.use(hpp());
 
 // Rate Limiting
 const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
 const authLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 10, // limit each IP to 10 requests per windowMs for auth routes
-    message: { message: 'Too many authentication attempts from this IP, please try again after an hour' },
-    standardHeaders: true,
-    legacyHeaders: false,
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // limit each IP to 10 requests per windowMs for auth routes
+  message: { message: 'Too many authentication attempts from this IP, please try again after an hour' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 app.use(globalLimiter);
@@ -71,8 +71,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Request Logger
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
 });
 
 // Basic route
@@ -87,6 +87,9 @@ const ipEnforcementMiddleware = require('./middleware/ipEnforcement.middleware')
 app.use(maintenanceMiddleware);
 app.use(ipEnforcementMiddleware);
 
+// Webhooks (Must be before maintenance/auth for NOWPayments)
+app.use('/api/webhooks', require('./routes/webhook.routes.js'));
+
 // Routes
 app.use('/api/auth', require('./routes/auth.routes.js'));
 app.use('/api/user', require('./routes/user.routes.js'));
@@ -95,7 +98,7 @@ app.use('/api/products', require('./routes/product.routes.js'));
 app.use('/api/opportunities', require('./routes/opportunity.routes.js'));
 app.use('/api/community', require('./routes/community.routes.js'));
 app.use('/api/admin', require('./routes/admin.routes.js'));
-app.use('/api/payments', require('./routes/payment.routes.js'));
+
 app.use('/api/upload', require('./routes/upload.routes.js'));
 
 // Custom Error Handler

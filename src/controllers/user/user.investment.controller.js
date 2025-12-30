@@ -22,12 +22,10 @@ const investmentController = {
                 type: plan.type,
                 description: plan.description,
                 minInvestment: {
-                    usd: plan.minAmount,
-                    ngn: plan.minAmount
+                    usd: plan.minAmount
                 },
                 maxInvestment: {
-                    usd: plan.maxAmount,
-                    ngn: plan.maxAmount
+                    usd: plan.maxAmount
                 },
                 minAmount: plan.minAmount,
                 maxAmount: plan.maxAmount,
@@ -372,7 +370,7 @@ async function sendInvestmentNotifications(user, name, amount, investmentId) {
     await sendNotification(
         user._id,
         'Investment Created',
-        `You have successfully invested ₦${amount} in the ${name} plan.`,
+        `You have successfully invested $${amount} in the ${name} plan.`,
         'investment',
         'normal',
         { investmentId, amount }
@@ -381,7 +379,7 @@ async function sendInvestmentNotifications(user, name, amount, investmentId) {
     const isHighValue = amount >= 1000;
     await sendAdminNotification(
         isHighValue ? '🔥 High-Value Investment Alert' : 'New Investment Created',
-        `User ${user.email} invested ₦${amount} in ${name}.`,
+        `User ${user.email} invested $${amount} in ${name}.`,
         'admin',
         isHighValue ? 'high' : 'normal',
         { investmentId, userId: user._id, amount }

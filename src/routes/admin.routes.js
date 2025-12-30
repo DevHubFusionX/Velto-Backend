@@ -54,4 +54,19 @@ router.post('/settings/whitelist/remove', adminController.removeIpFromWhitelist)
 router.get('/security/my-ip', adminController.getCurrentIp);
 router.post('/users/:userId/revoke-session', adminController.revokeSession);
 
+// Crypto Wallet Management
+router.get('/crypto/wallets', adminController.getAdminWallets);
+router.post('/crypto/wallets', adminController.createWallet);
+router.put('/crypto/wallets/:id', adminController.updateWallet);
+router.delete('/crypto/wallets/:id', adminController.deleteWallet);
+
+// Crypto Transaction Management
+router.get('/crypto/deposits', adminController.getCryptoDeposits);
+router.post('/crypto/deposits/:transactionId/approve', adminController.approveCryptoDeposit);
+router.post('/crypto/deposits/:transactionId/reject', adminController.rejectCryptoDeposit);
+router.get('/crypto/withdrawals', adminController.getCryptoWithdrawals);
+router.post('/crypto/withdrawals/:transactionId/approve', adminController.approveCryptoWithdrawal);
+router.post('/crypto/withdrawals/:transactionId/reject', adminController.rejectCryptoWithdrawal);
+router.get('/crypto/users/:userId/wallets', adminController.getUserCryptoWallets);
+
 module.exports = router;

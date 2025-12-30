@@ -4,8 +4,8 @@
     "email": "user@example.com",
     "password": "password",
     "name": "John Doe",
-    "phone": "+234 812 345 6789",
-    "location": "Lagos, Nigeria",
+    "phone": "+1 800 123 4567",
+    "location": "Global / Digital Platform",
     "joinDate": "January 2024",
     "bio": "Loves safe investments",
     "avatar": "JD"
@@ -277,9 +277,9 @@
         "up": true
       },
       {
-        "symbol": "NGN/USD",
-        "price": "1,520.00",
-        "change": "+0.1%",
+        "symbol": "USDT/USD",
+        "price": "1.00",
+        "change": "+0.01%",
         "up": true
       },
       {
@@ -418,26 +418,21 @@
     "limits": {
       "deposit": {
         "min": {
-          "ngn": 1000,
           "usd": 10
         },
         "max": {
-          "ngn": 10000000,
           "usd": 10000
         }
       },
       "withdrawal": {
         "min": {
-          "ngn": 2000,
           "usd": 20
         },
         "max": {
-          "ngn": 5000000,
           "usd": 5000
         }
       },
       "totalPersonalInvestmentLimit": {
-        "ngn": 50000000,
         "usd": 50000
       }
     },
@@ -455,11 +450,9 @@
       "durationDays": 365,
       "payoutFrequency": "End of term",
       "minAmount": {
-        "ngn": 50000,
         "usd": 50
       },
       "maxAmount": {
-        "ngn": 5000000,
         "usd": 5000
       },
       "risk": "Low Risk",
@@ -476,11 +469,9 @@
       "durationDays": 730,
       "payoutFrequency": "Quarterly",
       "minAmount": {
-        "ngn": 250000,
         "usd": 250
       },
       "maxAmount": {
-        "ngn": 25000000,
         "usd": 25000
       },
       "risk": "Medium Risk",
@@ -509,15 +500,12 @@
       "durationDays": 540,
       "payoutFrequency": "Monthly",
       "minAmount": {
-        "ngn": 500000,
         "usd": 500
       },
       "maxAmount": {
-        "ngn": 100000000,
         "usd": 100000
       },
       "minInvestment": {
-        "ngn": "₦500,000",
         "usd": "$500"
       },
       "spotsLeft": 8,

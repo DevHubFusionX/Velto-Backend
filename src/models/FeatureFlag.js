@@ -31,6 +31,6 @@ const featureFlagSchema = new mongoose.Schema({
 });
 
 // Optimization Index
-featureFlagSchema.index({ key: 1 });
+
 
 module.exports = mongoose.model('FeatureFlag', featureFlagSchema);

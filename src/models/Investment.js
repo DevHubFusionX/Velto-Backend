@@ -18,7 +18,7 @@ const investmentSchema = new mongoose.Schema({
     },
     currency: {
         type: String,
-        default: 'NGN'
+        default: 'USD'
     },
     startDate: {
         type: Date,

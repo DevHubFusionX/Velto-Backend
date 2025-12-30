@@ -5,6 +5,7 @@ const investmentController = require('./admin.investment.controller');
 const settingsController = require('./admin.settings.controller');
 const kycController = require('./admin.kyc.controller');
 const notificationController = require('./admin.notification.controller');
+const cryptoController = require('./admin.crypto.controller');
 
 const adminController = {
     ...statsController,
@@ -13,7 +14,8 @@ const adminController = {
     ...investmentController,
     ...settingsController,
     ...kycController,
-    ...notificationController
+    ...notificationController,
+    ...cryptoController
 };
 
 module.exports = adminController;

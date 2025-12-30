@@ -12,9 +12,9 @@ const Investment = require('../models/Investment');
 const processPayouts = async () => {
     try {
         console.log('[Payout Scheduler] Running payout processor...');
-        
+
         const now = new Date();
-        
+
         // Find all active investments with due payouts
         const dueInvestments = await UserInvestment.find({
             status: 'active',
@@ -46,7 +46,7 @@ const processPayouts = async () => {
 
                 // Process payout
                 const payoutAmount = investment.dailyPayoutAmount;
-                
+
                 // Update user balance
                 investment.user.totalBalance += payoutAmount;
                 await investment.user.save();
@@ -65,7 +65,7 @@ const processPayouts = async () => {
                     notes: 'Daily payout processed'
                 });
 
-                console.log(`[Payout Scheduler] Paid ₦${payoutAmount} to user ${investment.user.email} for investment ${investment._id}`);
+                console.log(`[Payout Scheduler] Paid $${payoutAmount} to user ${investment.user.email} for investment ${investment._id}`);
             } catch (error) {
                 console.error(`[Payout Scheduler] Error processing investment ${investment._id}:`, error);
             }
@@ -101,8 +101,8 @@ const processReferralRewards = async () => {
                 if (!user) continue;
 
                 // Rule: Referrer must have an active investment to unlock
-                const hasActiveInvestment = (await Investment.exists({ user: user._id, status: 'Active' })) || 
-                                           (await UserInvestment.exists({ user: user._id, status: 'active' }));
+                const hasActiveInvestment = (await Investment.exists({ user: user._id, status: 'Active' })) ||
+                    (await UserInvestment.exists({ user: user._id, status: 'active' }));
 
                 if (hasActiveInvestment) {
                     // Unlock reward
@@ -114,7 +114,7 @@ const processReferralRewards = async () => {
                     reward.description = reward.description.replace('Pending', 'Unlocked');
                     await reward.save();
 
-                    console.log(`[Referral Scheduler] ✅ Unlocked ₦${reward.amount} for user ${user.email}`);
+                    console.log(`[Referral Scheduler] ✅ Unlocked $${reward.amount} for user ${user.email}`);
                 } else {
                     console.log(`[Referral Scheduler] ⏳ User ${user.email} has no active investment. Reward ${reward._id} remains pending.`);
                 }
@@ -139,7 +139,7 @@ const initializeScheduler = () => {
     });
 
     console.log('[Payout Scheduler] Initialized - Running every hour');
-    
+
     // Optional: Run immediately on startup for verification if in dev
     if (process.env.NODE_ENV === 'development') {
         processReferralRewards();

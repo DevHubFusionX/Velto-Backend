@@ -13,14 +13,14 @@ const mockData = {
   platformSettings: {
     limits: {
       deposit: {
-        min: { ngn: 1000, usd: 10 },
-        max: { ngn: 10000000, usd: 10000 }
+        min: { usd: 10 },
+        max: { usd: 10000 }
       },
       withdrawal: {
-        min: { ngn: 2000, usd: 20 },
-        max: { ngn: 5000000, usd: 5000 }
+        min: { usd: 20 },
+        max: { usd: 5000 }
       },
-      totalPersonalInvestmentLimit: { ngn: 50000000, usd: 50000 }
+      totalPersonalInvestmentLimit: { usd: 50000 }
     },
     maintenanceMode: false
   },
@@ -95,7 +95,7 @@ const mockData = {
       { symbol: 'BTC/USD', price: '64,231.50', change: '+2.4%', up: true },
       { symbol: 'ETH/USD', price: '3,452.12', change: '-1.2%', up: false },
       { symbol: 'S&P 500', price: '5,231.10', change: '+0.8%', up: true },
-      { symbol: 'NGN/USD', price: '1,520.00', change: '+0.1%', up: true },
+      { symbol: 'USDT/USD', price: '1.00', change: '+0.01%', up: true },
       { symbol: 'GOLD', price: '2,341.20', change: '-0.3%', up: false },
       { symbol: 'APPLE', price: '182.45', change: '+1.5%', up: true },
       { symbol: 'TESLA', price: '175.20', change: '-2.1%', up: false },
@@ -122,8 +122,8 @@ const mockData = {
       roiType: 'Fixed',
       durationDays: 365,
       payoutFrequency: 'End of term',
-      minAmount: { ngn: 50000, usd: 50 },
-      maxAmount: { ngn: 5000000, usd: 5000 },
+      minAmount: { usd: 50 },
+      maxAmount: { usd: 5000 },
       risk: 'Low Risk',
       status: 'active'
     },
@@ -137,8 +137,8 @@ const mockData = {
       roiType: 'Variable',
       durationDays: 730,
       payoutFrequency: 'Quarterly',
-      minAmount: { ngn: 250000, usd: 250 },
-      maxAmount: { ngn: 25000000, usd: 25000 },
+      minAmount: { usd: 250 },
+      maxAmount: { usd: 25000 },
       risk: 'Medium Risk',
       status: 'active'
     }
@@ -154,9 +154,9 @@ const mockData = {
       roiType: 'Fixed',
       durationDays: 540,
       payoutFrequency: 'Monthly',
-      minAmount: { ngn: 500000, usd: 500 },
-      maxAmount: { ngn: 100000000, usd: 100000 },
-      minInvestment: { ngn: '₦500,000', usd: '$500' }, // Kept for frontend fallback
+      minAmount: { usd: 500 },
+      maxAmount: { usd: 100000 },
+      minInvestment: { usd: '$500' }, // Kept for frontend fallback
       spotsLeft: 8,
       totalSpots: 50,
       trending: true,
