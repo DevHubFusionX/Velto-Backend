@@ -31,7 +31,8 @@ class NOWPaymentsService {
             return response.data;
         } catch (error) {
             console.error('NOWPayments Creation Error:', error.response?.data || error.message);
-            throw new Error('Failed to create NOWPayments transaction');
+            // Re-throw the original error so controller can access error.response
+            throw error;
         }
     }
 

@@ -66,6 +66,7 @@ const cryptoController = {
             const user = await User.findById(req.user.id);
             const reference = `CRYPTO-DEP-${Date.now()}`;
 
+            console.log(`[Deposit] Creating payment for ${amountUsd} ${cryptoCurrency}`);
             // 1. Create NOWPayments payment
             const paymentData = await nowpaymentsService.createPayment(
                 amountUsd,
@@ -74,6 +75,7 @@ const cryptoController = {
                 reference,
                 `Deposit from ${user.email}`
             );
+            console.log('[Deposit] NOWPayments payment created:', paymentData.payment_id);
 
             // 2. Create Transaction record in our DB
             const transaction = await Transaction.create({
@@ -94,6 +96,7 @@ const cryptoController = {
                 paymentStatus: paymentData.payment_status,
                 network: cryptoCurrency.includes('USDT') ? (cryptoCurrency.includes('TRC20') ? 'TRC20' : 'ERC20') : cryptoCurrency
             });
+            console.log('[Deposit] Transaction record created:', transaction._id);
 
             await sendNotification(
                 user._id,
@@ -103,6 +106,7 @@ const cryptoController = {
                 'normal',
                 { transactionId: transaction._id }
             );
+            console.log('[Deposit] Notification triggered');
 
             res.json({
                 message: 'Deposit address generated',
@@ -113,7 +117,15 @@ const cryptoController = {
             });
         } catch (err) {
             console.error('Error initiating crypto deposit:', err);
-            res.status(500).json({ message: 'Error processing crypto deposit. Ensure API settings are correct.' });
+
+            // Extract more specific error info if available (e.g. from NOWPayments)
+            const errorMessage = err.response?.data?.message || err.message || 'Error processing crypto deposit';
+
+            res.status(500).json({
+                message: 'Error processing crypto deposit. Ensure API settings are correct.',
+                error: errorMessage,
+                details: err.response?.data || null
+            });
         }
     },
 
