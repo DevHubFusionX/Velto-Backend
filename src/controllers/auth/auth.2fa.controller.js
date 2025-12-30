@@ -103,7 +103,8 @@ const twoFactorController = {
                     phone: user.phone,
                     location: user.location,
                     joinDate: user.joinDate.toLocaleDateString(),
-                    balance: user.totalBalance
+                    balance: user.totalBalance,
+                    isEmailVerified: user.isEmailVerified
                 }
             });
         } else {
