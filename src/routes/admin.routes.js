@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const adminController = require('../controllers/admin.controller');
+const adminController = require('../controllers/admin');
 const validateRequest = require('../middleware/validateRequest');
 const adminSchemas = require('../validations/admin.schema');
 const { protect, authorize } = require('../middleware/auth');
@@ -15,6 +15,9 @@ router.get('/users', adminController.getUsers);
 router.get('/products', adminController.getProductsWithStats);
 router.get('/health', adminController.getSystemHealth);
 router.get('/logs', adminController.getLogs);
+router.get('/notifications', adminController.getAdminNotifications);
+router.patch('/notifications/:id/read', adminController.markAdminNotificationRead);
+router.post('/notifications/mark-all-read', adminController.markAllAdminNotificationsRead);
 router.get('/withdrawals', adminController.getWithdrawals);
 router.get('/kyc/pending', adminController.getPendingKYC);
 router.post('/kyc/:kycId/approve', adminController.approveKYC);

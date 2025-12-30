@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const UserInvestment = require('../models/UserInvestment');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
+const { sendNotification } = require('../utils/notification');
 
 const runDailyPayouts = async () => {
     console.log('Running daily payout cron job...');
@@ -37,22 +38,33 @@ const runDailyPayouts = async () => {
                     description: `Daily ROI for plan: ${investment.plan}`, // Ideally populate plan details if needed
                 });
 
-                // 3. Update Investment Record
-                investment.totalPayoutReceived += investment.dailyPayoutAmount;
-                
-                // Calculate next payout date (add 1 day)
-                const nextDate = new Date(investment.nextPayoutDate);
-                nextDate.setDate(nextDate.getDate() + 1);
-                investment.nextPayoutDate = nextDate;
+                await investment.save();
 
-                // Check if investment is completed (EndDate reached or total payouts met)
-                // Using EndDate as the primary completion trigger
-                 if (nextDate > investment.endDate) {
+                // 4. Send Notification
+                await sendNotification(
+                    user._id,
+                    'ROI Payout Credited',
+                    `Your daily payout of ${investment.dailyPayoutAmount} has been credited for your investment.`,
+                    'success',
+                    'low',
+                    { investmentId: investment._id }
+                );
+
+                // Check if investment is completed
+                if (nextPayoutDate > investment.endDate) {
                     investment.status = 'completed';
+                    await investment.save();
+                    
+                    await sendNotification(
+                        user._id,
+                        'Investment Completed',
+                        `Your investment in the ${investment.plan} has reached its completion date.`,
+                        'success',
+                        'normal',
+                        { investmentId: investment._id }
+                    );
                     console.log(`Investment ${investment._id} completed.`);
                 }
-
-                await investment.save();
 
             } catch (err) {
                 console.error(`Error processing investment ${investment._id}:`, err);

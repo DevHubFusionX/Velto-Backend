@@ -13,17 +13,17 @@ const createTransporter = () => {
             secure: true,
             auth: {
                 user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASSWORD
+                pass: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS
             }
         });
     }
-    
+
     // Development: Use Gmail or create test account
     return nodemailer.createTransport({
         service: 'gmail',
         auth: {
             user: process.env.EMAIL_USER || 'your-email@gmail.com',
-            pass: process.env.EMAIL_PASSWORD || 'your-app-password'
+            pass: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS || 'your-app-password'
         }
     });
 };
@@ -39,14 +39,14 @@ const createTransporter = () => {
 const sendEmail = async ({ to, subject, html }) => {
     try {
         const transporter = createTransporter();
-        
+
         const mailOptions = {
             from: `"Investment Platform" <${process.env.EMAIL_USER || 'noreply@investment.com'}>`,
             to,
             subject,
             html
         };
-        
+
         const info = await transporter.sendMail(mailOptions);
         console.log('Email sent:', info.messageId);
         return { success: true, messageId: info.messageId };

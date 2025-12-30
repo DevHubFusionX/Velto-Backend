@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const Transaction = require('../models/Transaction');
 const User = require('../models/User');
+const { sendNotification } = require('../utils/notification');
 
 const paymentController = {
     handleWebhook: async (req, res) => {
@@ -43,6 +44,14 @@ const paymentController = {
                         user.totalBalance += realAmount;
                         await user.save();
                         console.log(`Payment Webhook: Credited ${user.email} with ${realAmount}`);
+
+                        // Send Notification
+                        await sendNotification(
+                            user._id,
+                            'Payment Successful',
+                            `Your deposit of ${realAmount} via Paystack has been confirmed and credited to your wallet.`,
+                            'deposit'
+                        );
                     }
                 } else {
                     // Transaction likely initiated directly via Paystack standard checkout without prior API call?
@@ -66,9 +75,43 @@ const paymentController = {
                         user.totalBalance += realAmount;
                         await user.save();
                         console.log(`Payment Webhook (New Tx): Credited ${user.email} with ${realAmount}`);
+
+                        // Send Notification
+                        await sendNotification(
+                            user._id,
+                            'Payment Successful',
+                            `Your deposit of ${realAmount} via Paystack has been confirmed and credited to your wallet.`,
+                            'deposit'
+                        );
                     } else {
                         console.warn(`Payment Webhook: Unknown user ${customer.email} for ref ${reference}`);
                     }
+                }
+            } else if (event.event === 'charge.failed') {
+                const { reference, customer } = event.data;
+                const existingTx = await Transaction.findOne({ reference });
+                
+                if (existingTx) {
+                    existingTx.status = 'Failed';
+                    existingTx.description = `${existingTx.description} - Payment Failed on Gateway`;
+                    await existingTx.save();
+                    
+                    await sendNotification(
+                        existingTx.user,
+                        'Payment Failed',
+                        `Your payment of ${existingTx.amount} ${existingTx.currency} could not be processed by the gateway.`,
+                        'warning'
+                    );
+                } else {
+                     const user = await User.findOne({ email: customer.email });
+                     if (user) {
+                        await sendNotification(
+                            user._id,
+                            'Payment Failed',
+                            'A recent payment attempt via Paystack has failed.',
+                            'warning'
+                        );
+                     }
                 }
             }
 

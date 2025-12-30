@@ -18,6 +18,9 @@ const userSchemas = {
         }),
         currency: Joi.string().valid('USD', 'NGN').required().messages({
             'any.only': 'Currency must be either USD or NGN'
+        }),
+        proofUrl: Joi.string().optional().allow(null, '').messages({
+            'string.base': 'Proof URL must be a string'
         })
     }),
 

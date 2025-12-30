@@ -15,8 +15,14 @@ const initializeSocket = (server) => {
 
         // Join a room based on user ID for private updates
         socket.on('join', (userId) => {
-            socket.join(userId);
+            socket.join(userId.toString());
             console.log(`User ${userId} joined their private room`);
+        });
+
+        // Join admin room
+        socket.on('join_admin', () => {
+            socket.join('admins');
+            console.log('An admin joined the admins room');
         });
 
         socket.on('disconnect', () => {

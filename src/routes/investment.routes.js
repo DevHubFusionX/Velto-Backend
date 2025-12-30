@@ -1,24 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const investmentController = require('../controllers/investment.controller');
+const userInvestmentController = require('../controllers/user/user.investment.controller');
+const adminInvestmentController = require('../controllers/admin/admin.investment.controller');
 const auth = require('../middleware/auth');
 
 // Private routes
-router.use(auth.protect); // Ensure protect middleware is used properly from export
+router.use(auth.protect);
 
-// Legacy Routes
-router.get('/', investmentController.getAll);
-router.get('/:id', investmentController.getById);
+// User Routes
+router.get('/', userInvestmentController.getMyInvestments);
+router.get('/my/investments', userInvestmentController.getMyInvestments);
+router.post('/invest', userInvestmentController.invest);
+router.get('/plans/list', userInvestmentController.getPlans);
 
-// New System Routes
-router.post('/plans', auth.authorize('admin'), investmentController.createPlan);
-router.put('/plans/:id', auth.authorize('admin'), investmentController.updatePlan);
-router.delete('/plans/:id', auth.authorize('admin'), investmentController.deletePlan);
-router.patch('/plans/:id/status', auth.authorize('admin'), investmentController.togglePlanStatus);
-router.get('/plans/list', investmentController.getPlans); // Public: Active only
-router.get('/plans/admin/list', auth.authorize('admin'), investmentController.getAllPlans); // Admin: All plans
-router.post('/invest', investmentController.invest);
-router.get('/my/investments', investmentController.getMyInvestments);
-router.get('/admin/all', auth.authorize('admin'), investmentController.getAllInvestments);
+// Admin Routes
+router.post('/plans', auth.authorize('admin'), adminInvestmentController.createInvestmentPlan);
+router.put('/plans/:id', auth.authorize('admin'), adminInvestmentController.updatePlan);
+router.delete('/plans/:id', auth.authorize('admin'), adminInvestmentController.deletePlan);
+router.patch('/plans/:id/status', auth.authorize('admin'), adminInvestmentController.togglePlanStatus);
+router.get('/plans/admin/list', auth.authorize('admin'), adminInvestmentController.getAllPlans);
+router.get('/admin/all', auth.authorize('admin'), adminInvestmentController.getAllInvestments);
 
 module.exports = router;

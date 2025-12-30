@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const investmentController = require('../controllers/investment.controller');
+const userInvestmentController = require('../controllers/user/user.investment.controller');
 
-router.get('/', investmentController.getOpportunities);
+router.get('/', userInvestmentController.getOpportunities);
 
 module.exports = router;
