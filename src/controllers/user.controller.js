@@ -272,19 +272,31 @@ const userController = {
     },
 
     deposit: async (req, res) => {
-        const { amount, method, currency, proofUrl } = req.body;
-        const numAmount = parseFloat(amount);
-
         try {
+            console.log('Deposit Request Body:', req.body);
+            const { amount, method, currency, proofUrl } = req.body;
+            const numAmount = parseFloat(amount);
+
             const settings = await Settings.findOne();
+            // Check if settings or limits exist
+            if (!settings || !settings.limits || !settings.limits.deposit) {
+                 console.error('Deposit limits not found in settings');
+                 // Fallback or error? For debugging, let's error
+                 return res.status(500).json({ message: 'System configuration error: limits not found' });
+            }
+
             const limits = settings.limits.deposit;
             const min = currency === 'USD' ? limits.min.usd : limits.min.ngn;
             const max = currency === 'USD' ? limits.max.usd : limits.max.ngn;
+            
+            console.log(`Deposit Validation: Amount=${numAmount}, Currency=${currency}, Min=${min}, Max=${max}`);
 
             if (numAmount < min) {
+                console.log('Deposit failed: Below minimum');
                 return res.status(400).json({ message: `Minimum deposit is ${min}` });
             }
             if (numAmount > max) {
+                 console.log('Deposit failed: Above maximum');
                 return res.status(400).json({ message: `Maximum deposit is ${max}` });
             }
 
