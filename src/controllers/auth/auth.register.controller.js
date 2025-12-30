@@ -49,13 +49,10 @@ const registerController = {
 
             console.log(`--- EMAIL VERIFICATION CODE for ${email}: ${verificationToken} ---`);
 
-            try {
-                console.log('[REGISTER] Attempting to send verification email...');
-                await sendVerificationEmail(user, verificationToken);
-                console.log('[REGISTER] ✅ Verification email sent successfully');
-            } catch (emailError) {
-                console.error('[REGISTER] ❌ Failed to send verification email:', emailError.message);
-            }
+            // Non-blocking email dispatch
+            sendVerificationEmail(user, verificationToken)
+                .then(() => console.log('[REGISTER] ✅ Verification email sent successfully'))
+                .catch(emailError => console.error('[REGISTER] ❌ Failed to send verification email:', emailError.message));
 
             res.status(201).json({
                 token: generateToken(user._id),

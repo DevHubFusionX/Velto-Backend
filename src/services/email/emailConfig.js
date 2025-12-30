@@ -1,13 +1,16 @@
 const nodemailer = require('nodemailer');
+let transporter = null;
 
 /**
  * Create email transporter based on environment
  * For development: Uses Gmail
  * For production: Uses configured email service
  */
-const createTransporter = () => {
+const getTransporter = () => {
+    if (transporter) return transporter;
+
     if (process.env.NODE_ENV === 'production') {
-        return nodemailer.createTransport({
+        transporter = nodemailer.createTransport({
             host: process.env.EMAIL_HOST,
             port: process.env.EMAIL_PORT,
             secure: true,
@@ -16,16 +19,18 @@ const createTransporter = () => {
                 pass: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS
             }
         });
+    } else {
+        // Development: Use Gmail or create test account
+        transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER || 'your-email@gmail.com',
+                pass: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS || 'your-app-password'
+            }
+        });
     }
 
-    // Development: Use Gmail or create test account
-    return nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER || 'your-email@gmail.com',
-            pass: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS || 'your-app-password'
-        }
-    });
+    return transporter;
 };
 
 /**
@@ -38,7 +43,7 @@ const createTransporter = () => {
  */
 const sendEmail = async ({ to, subject, html }) => {
     try {
-        const transporter = createTransporter();
+        const mailTransporter = getTransporter();
 
         const mailOptions = {
             from: `"Investment Platform" <${process.env.EMAIL_USER || 'noreply@investment.com'}>`,
@@ -47,7 +52,7 @@ const sendEmail = async ({ to, subject, html }) => {
             html
         };
 
-        const info = await transporter.sendMail(mailOptions);
+        const info = await mailTransporter.sendMail(mailOptions);
         console.log('Email sent:', info.messageId);
         return { success: true, messageId: info.messageId };
     } catch (error) {
@@ -57,6 +62,6 @@ const sendEmail = async ({ to, subject, html }) => {
 };
 
 module.exports = {
-    createTransporter,
+    getTransporter,
     sendEmail
 };
