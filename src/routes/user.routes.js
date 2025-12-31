@@ -24,6 +24,7 @@ router.get('/settings', userController.getSettings);
 router.get('/crypto/wallets', userController.getMyWallets);
 router.get('/crypto/deposit-addresses', userController.getDepositAddresses);
 router.post('/crypto/deposit', userController.initiateCryptoDeposit);
+router.post('/crypto/deposit/:transactionId/proof', userController.submitCryptoProof);
 router.post('/crypto/withdraw', userController.requestCryptoWithdrawal);
 
 module.exports = router;

@@ -140,6 +140,42 @@ const cryptoController = {
         }
     },
 
+    // Submit manual proof/hash for faster verification
+    submitCryptoProof: async (req, res) => {
+        try {
+            const { transactionId } = req.params;
+            const { txHash, proofUrl } = req.body;
+
+            const transaction = await Transaction.findOne({ _id: transactionId, user: req.user.id });
+            if (!transaction) {
+                return res.status(404).json({ message: 'Transaction not found' });
+            }
+
+            if (transaction.status !== 'Pending') {
+                return res.status(400).json({ message: 'Transaction already processed' });
+            }
+
+            if (txHash) transaction.txHash = txHash;
+            if (proofUrl) transaction.proofUrl = proofUrl;
+
+            transaction.description = `${transaction.description} (Manual Proof Submitted)`;
+            await transaction.save();
+
+            await sendAdminNotification(
+                'Manual Crypto Proof Submitted',
+                `User ${req.user.email} submitted manual proof for $${transaction.amount} ${transaction.cryptoCurrency}`,
+                'deposit',
+                'high',
+                { transactionId: transaction._id }
+            );
+
+            res.json({ message: 'Proof submitted successfully. Admin will verify.', transaction });
+        } catch (err) {
+            console.error('Error submitting crypto proof:', err);
+            res.status(500).json({ message: 'Error submitting proof' });
+        }
+    },
+
     // Request crypto withdrawal
     requestCryptoWithdrawal: async (req, res) => {
         try {
