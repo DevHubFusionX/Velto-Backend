@@ -2,26 +2,22 @@ require('dotenv').config();
 const { verifyConnection, sendEmail } = require('./src/services/email/emailConfig');
 
 const runTest = async () => {
-    console.log('--- Starting Email Service Diagnostic ---');
-    console.log('Checking configuration...');
+    console.log('--- Starting Email Service Diagnostic (Resend) ---');
 
     // 1. Verify Connection
-    console.log('\n1. Testing SMTP Connection...');
+    console.log('\n1. Testing Resend API Connection...');
     const isConnected = await verifyConnection();
 
     if (isConnected) {
-        console.log('✅ Connection verification passed!');
-
         // 2. Try Sending Email
-        // Only if a recipient is provided as argument, otherwise just skip
         const testRecipient = process.argv[2];
         if (testRecipient) {
             console.log(`\n2. Attempting to send test email to: ${testRecipient}`);
             try {
                 const result = await sendEmail({
                     to: testRecipient,
-                    subject: 'Velto Email Test',
-                    html: '<h1>It works!</h1><p>Your email service is configured correctly.</p>'
+                    subject: 'Velto Email Test (Resend)',
+                    html: '<h1>It works!</h1><p>Your Resend email service is configured correctly.</p>'
                 });
                 console.log('✅ Email sent successfully!', result);
             } catch (error) {
@@ -32,7 +28,7 @@ const runTest = async () => {
             console.log('Usage: node test-email.js <your-email@example.com>');
         }
     } else {
-        console.error('❌ Connection verification failed. Check your network, credentials, or firewall.');
+        console.error('❌ Resend initialization failed. Check your RESEND_API_KEY.');
     }
 
     console.log('\n--- Diagnostic Complete ---');
