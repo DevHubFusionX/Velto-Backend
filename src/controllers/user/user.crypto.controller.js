@@ -118,13 +118,24 @@ const cryptoController = {
         } catch (err) {
             console.error('Error initiating crypto deposit:', err);
 
-            // Extract more specific error info if available (e.g. from NOWPayments)
-            const errorMessage = err.response?.data?.message || err.message || 'Error processing crypto deposit';
+            // Extract specific gateway error details
+            const gatewayError = err.response?.data;
+            let errorMessage = 'Error processing crypto deposit. Please try again.';
+            let statusCode = 500;
 
-            res.status(500).json({
-                message: 'Error processing crypto deposit. Ensure API settings are correct.',
-                error: errorMessage,
-                details: err.response?.data || null
+            if (gatewayError) {
+                if (gatewayError.code === 'AMOUNT_MINIMAL_ERROR') {
+                    errorMessage = `The amount is too low for ${cryptoCurrency}. Please try a higher amount (e.g. $20).`;
+                    statusCode = 400;
+                } else if (gatewayError.message) {
+                    errorMessage = gatewayError.message;
+                }
+            }
+
+            res.status(statusCode).json({
+                message: errorMessage,
+                error: err.message,
+                details: gatewayError || null
             });
         }
     },

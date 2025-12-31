@@ -37,7 +37,7 @@ const settingsSchema = new mongoose.Schema({
             type: [String],
             default: ['BTC', 'ETH', 'BNB', 'LTC', 'USDT_TRC20', 'USDT_ERC20']
         },
-        depositMinUsd: { type: Number, default: 10 },
+        depositMinUsd: { type: Number, default: 15 },
         depositMaxUsd: { type: Number, default: 100000 },
         withdrawalMinUsd: { type: Number, default: 20 },
         withdrawalMaxUsd: { type: Number, default: 50000 }

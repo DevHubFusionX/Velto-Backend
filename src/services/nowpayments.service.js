@@ -8,14 +8,25 @@ class NOWPaymentsService {
         this.baseUrl = 'https://api.nowpayments.io/v1';
     }
 
+    /**
+     * Clean currency codes (e.g. USDT_TRC20 -> usdttrc20)
+     */
+    formatCurrency(currency) {
+        if (!currency) return '';
+        return currency.toLowerCase().replace(/_/g, '').replace(/-/g, '');
+    }
+
     async createPayment(amount, currency_from, currency_to, order_id, order_description) {
         try {
+            const cleanCurrencyFrom = this.formatCurrency(currency_from);
+            const cleanCurrencyTo = this.formatCurrency(currency_to);
+
             const response = await axios.post(
                 `${this.baseUrl}/payment`,
                 {
                     price_amount: amount,
                     price_currency: 'usd',
-                    pay_currency: currency_from,
+                    pay_currency: cleanCurrencyFrom,
                     ipn_callback_url: `${process.env.BACKEND_URL}/api/webhooks/nowpayments`,
                     order_id,
                     order_description
