@@ -12,19 +12,31 @@ const toBool = (val) => val === 'true' || val === true;
  */
 const createTransporter = () => {
     // Default config using environment variables
+    const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
+    const port = parseInt(process.env.EMAIL_PORT || '465');
+    const secure = toBool(process.env.EMAIL_SECURE) || port === 465;
+
+    console.log(`[EMAIL CONFIG] Host: ${host} | Port: ${port} | Secure: ${secure}`);
+
     const config = {
-        host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.EMAIL_PORT || '465'),
-        secure: toBool(process.env.EMAIL_SECURE) || parseInt(process.env.EMAIL_PORT) === 465, // true for 465, false for other ports
+        host,
+        port,
+        secure, // true for 465, false for other ports
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS
         },
         // Connection Pooling Settings
         pool: true, // Use pooled connections
-        maxConnections: 5, // Limit concurrent connections
+        maxConnections: 3, // Lower concurrency to be safe
         maxMessages: 100, // Limit messages per connection
-        rateLimit: 10 // Limit messages per second
+        // Timeouts
+        connectionTimeout: 10000, // 10 seconds
+        greetingTimeout: 10000, // 10 seconds
+        socketTimeout: 15000, // 15 seconds
+        // Debug
+        debug: false,
+        logger: false
     };
 
     // Development override if needed
