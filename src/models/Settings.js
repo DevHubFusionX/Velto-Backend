@@ -35,7 +35,7 @@ const settingsSchema = new mongoose.Schema({
         enabled: { type: Boolean, default: true },
         supportedCurrencies: {
             type: [String],
-            default: ['BTC', 'ETH', 'BNB', 'LTC', 'USDT_TRC20', 'USDT_ERC20']
+            default: ['BTC', 'ETH', 'BNB', 'USDT_TRC20', 'USDT_ERC20']
         },
         depositMinUsd: { type: Number, default: 15 },
         depositMaxUsd: { type: Number, default: 100000 },

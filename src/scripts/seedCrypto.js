@@ -30,13 +30,7 @@ const ADMIN_WALLETS = [
         label: 'BNB Wallet',
         isActive: true
     },
-    {
-        currency: 'LTC',
-        address: 'REPLACE_WITH_YOUR_LTC_ADDRESS',
-        network: 'Litecoin',
-        label: 'Litecoin Wallet',
-        isActive: true
-    },
+
     {
         currency: 'USDT_TRC20',
         address: 'REPLACE_WITH_YOUR_USDT_TRC20_ADDRESS',
@@ -77,7 +71,7 @@ const seedCrypto = async () => {
             if (!settings.crypto) {
                 settings.crypto = {
                     enabled: true,
-                    supportedCurrencies: ['BTC', 'ETH', 'BNB', 'LTC', 'USDT_TRC20', 'USDT_ERC20'],
+                    supportedCurrencies: ['BTC', 'ETH', 'BNB', 'USDT_TRC20', 'USDT_ERC20'],
                     depositMinUsd: 10,
                     depositMaxUsd: 100000,
                     withdrawalMinUsd: 20,
@@ -86,7 +80,9 @@ const seedCrypto = async () => {
                 await settings.save();
                 console.log('  ✅ Crypto settings added to existing settings');
             } else {
-                console.log('  ⏭️  Crypto settings already exist');
+                settings.crypto.supportedCurrencies = ['BTC', 'ETH', 'BNB', 'USDT_TRC20', 'USDT_ERC20'];
+                await settings.save();
+                console.log('  ✅ Supported currencies updated in existing settings');
             }
         } else {
             await Settings.create({
@@ -97,7 +93,7 @@ const seedCrypto = async () => {
                 },
                 crypto: {
                     enabled: true,
-                    supportedCurrencies: ['BTC', 'ETH', 'BNB', 'LTC', 'USDT_TRC20', 'USDT_ERC20'],
+                    supportedCurrencies: ['BTC', 'ETH', 'BNB', 'USDT_TRC20', 'USDT_ERC20'],
                     depositMinUsd: 10,
                     depositMaxUsd: 100000,
                     withdrawalMinUsd: 20,
