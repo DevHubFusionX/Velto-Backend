@@ -9,12 +9,16 @@ validateEnv();
 
 const connectDB = require('./src/config/db');
 const { initializeScheduler } = require('./src/services/payout.scheduler');
+const { verifyConnection } = require('./src/services/email/emailConfig');
 
 const http = require('http');
 const { initializeSocket } = require('./src/socket');
 
 // Connect to Database
 connectDB();
+
+// Verify Email Service Connection
+verifyConnection();
 
 // Initialize Payout Scheduler
 initializeScheduler();

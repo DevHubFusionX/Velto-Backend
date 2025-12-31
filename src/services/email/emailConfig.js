@@ -1,36 +1,60 @@
 const nodemailer = require('nodemailer');
+
 let transporter = null;
 
 /**
- * Create email transporter based on environment
- * For development: Uses Gmail
- * For production: Uses configured email service
+ * Convert string boolean values to actual booleans
  */
-const getTransporter = () => {
-    if (transporter) return transporter;
+const toBool = (val) => val === 'true' || val === true;
 
-    if (process.env.NODE_ENV === 'production') {
-        transporter = nodemailer.createTransport({
-            host: process.env.EMAIL_HOST,
-            port: process.env.EMAIL_PORT,
-            secure: true,
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS
-            }
-        });
-    } else {
-        // Development: Use Gmail or create test account
-        transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER || 'your-email@gmail.com',
-                pass: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS || 'your-app-password'
-            }
-        });
+/**
+ * Configure email transporter with connection pooling
+ */
+const createTransporter = () => {
+    // Default config using environment variables
+    const config = {
+        host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.EMAIL_PORT || '465'),
+        secure: toBool(process.env.EMAIL_SECURE) || parseInt(process.env.EMAIL_PORT) === 465, // true for 465, false for other ports
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS
+        },
+        // Connection Pooling Settings
+        pool: true, // Use pooled connections
+        maxConnections: 5, // Limit concurrent connections
+        maxMessages: 100, // Limit messages per connection
+        rateLimit: 10 // Limit messages per second
+    };
+
+    // Development override if needed
+    if (process.env.NODE_ENV !== 'production' && !process.env.EMAIL_USER) {
+        console.warn('⚠️ No EMAIL_USER found. Email sending will fail in development.');
     }
 
+    return nodemailer.createTransport(config);
+};
+
+const getTransporter = () => {
+    if (!transporter) {
+        transporter = createTransporter();
+    }
     return transporter;
+};
+
+/**
+ * Verify SMTP connection functionality
+ */
+const verifyConnection = async () => {
+    try {
+        const transport = getTransporter();
+        await transport.verify();
+        console.log('✅ Email service connected successfully');
+        return true;
+    } catch (error) {
+        console.error('❌ Email service connection failed:', error.message);
+        return false;
+    }
 };
 
 /**
@@ -46,22 +70,24 @@ const sendEmail = async ({ to, subject, html }) => {
         const mailTransporter = getTransporter();
 
         const mailOptions = {
-            from: `"Investment Platform" <${process.env.EMAIL_USER || 'noreply@investment.com'}>`,
+            from: `"${process.env.EMAIL_FROM_NAME || 'Velto Investment'}" <${process.env.EMAIL_USER}>`,
             to,
             subject,
             html
         };
 
         const info = await mailTransporter.sendMail(mailOptions);
-        console.log('Email sent:', info.messageId);
+        console.log(`[EMAIL] Sent to ${to} | ID: ${info.messageId}`);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('Email sending failed:', error);
-        throw new Error('Failed to send email');
+        console.error(`[EMAIL] Failed to send to ${to}:`, error.message);
+        // We log but don't crash the app. The caller can handle the error if strict delivery is required.
+        throw new Error(`Email sending failed: ${error.message}`);
     }
 };
 
 module.exports = {
     getTransporter,
+    verifyConnection,
     sendEmail
 };

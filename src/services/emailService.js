@@ -1,13 +1,8 @@
 /**
  * Email Service - Main Entry Point
  * 
- * This file re-exports all email service functions from the modular structure.
- * Import from this file to maintain backward compatibility.
- * 
- * New structure:
- * - email/emailConfig.js - Nodemailer configuration and base send function
- * - email/emailTemplates.js - HTML email templates
- * - email/index.js - High-level email service functions
+ * Re-exports the optimized email service functions.
+ * All email logic is now centralized in services/email/index.js
  */
 
 const {
@@ -15,7 +10,7 @@ const {
     sendVerificationEmail,
     sendPasswordResetEmail,
     sendWelcomeEmail
-} = require('./email');
+} = require('./email/index');
 
 module.exports = {
     sendEmail,
