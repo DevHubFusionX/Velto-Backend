@@ -8,15 +8,12 @@ const settingsController = {
             if (!settings) {
                 settings = await Settings.create({
                     maintenanceMode: false,
-                    limits: {
-                        deposit: {
-                            min: { usd: 10 },
-                            max: { usd: 100000 }
-                        },
-                        withdrawal: {
-                            min: { usd: 20 },
-                            max: { usd: 50000 }
-                        }
+                    crypto: {
+                        enabled: true,
+                        depositMinUsd: 10,
+                        depositMaxUsd: 100000,
+                        withdrawalMinUsd: 20,
+                        withdrawalMaxUsd: 50000
                     },
                     referral: {
                         rewardPercent: 3,
@@ -27,14 +24,15 @@ const settingsController = {
                         activeInvestmentRequired: true
                     },
                 });
-            } else if (!settings.referral) {
-                settings.referral = {
-                    rewardPercent: 3,
-                    maxRewardPerReferral: 5000,
-                    maxReferralsLifetime: 50,
-                    maxEarningsLifetime: 100000,
-                    unlockDays: 14,
-                    activeInvestmentRequired: true
+            } else if (!settings.crypto || !settings.crypto.depositMinUsd) {
+                // Migration/Fallback: Ensure crypto object exists if it's missing or partial
+                settings.crypto = {
+                    ...settings.crypto,
+                    enabled: settings.crypto?.enabled ?? true,
+                    depositMinUsd: settings.crypto?.depositMinUsd || 10,
+                    depositMaxUsd: settings.crypto?.depositMaxUsd || 100000,
+                    withdrawalMinUsd: settings.crypto?.withdrawalMinUsd || 20,
+                    withdrawalMaxUsd: settings.crypto?.withdrawalMaxUsd || 50000
                 };
                 await settings.save();
             }

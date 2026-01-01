@@ -34,7 +34,9 @@ const cryptoController = {
                 settings: {
                     enabled: settings?.crypto?.enabled ?? true,
                     minDeposit: settings?.crypto?.depositMinUsd || 10,
-                    maxDeposit: settings?.crypto?.depositMaxUsd || 100000
+                    maxDeposit: settings?.crypto?.depositMaxUsd || 100000,
+                    minWithdrawal: settings?.crypto?.withdrawalMinUsd || 20,
+                    maxWithdrawal: settings?.crypto?.withdrawalMaxUsd || 50000
                 }
             });
         } catch (err) {
