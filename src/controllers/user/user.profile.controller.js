@@ -64,6 +64,7 @@ const profileController = {
                     amount: inv.amount,
                     currency: 'USD',
                     currentValue: inv.amount,
+                    totalPayoutReceived: inv.totalPayoutReceived || 0,
                     roiPercent: (inv.plan?.dailyPayout || 0) * (inv.plan?.durationDays || 30),
                     startDate: inv.startDate.toISOString().split('T')[0],
                     maturityDate: maturityDate.toISOString().split('T')[0],
