@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { startCronOnly } = require('./services/cronService');
+const { initializeScheduler } = require('./services/payout.scheduler');
 
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
@@ -12,7 +12,9 @@ const hpp = require('hpp');
 dotenv.config();
 
 // Start Cron Jobs
-startCronOnly();
+initializeScheduler();
+// const { startCronOnly } = require('./services/cronService');
+// startCronOnly();
 
 const app = express();
 

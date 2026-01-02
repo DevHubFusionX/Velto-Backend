@@ -65,6 +65,16 @@ const processPayouts = async () => {
                     notes: 'Daily payout processed'
                 });
 
+                // Create Transaction Record (for user history)
+                await Transaction.create({
+                    user: investment.user._id,
+                    type: 'Investment Return',
+                    amount: payoutAmount,
+                    status: 'Completed',
+                    reference: `ROI-${investment._id}-${Date.now()}`,
+                    description: `Daily ROI for plan: ${investment.plan ? investment.plan.name : 'Investment'}`,
+                });
+
                 console.log(`[Payout Scheduler] Paid $${payoutAmount} to user ${investment.user.email} for investment ${investment._id}`);
             } catch (error) {
                 console.error(`[Payout Scheduler] Error processing investment ${investment._id}:`, error);
