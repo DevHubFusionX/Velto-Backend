@@ -64,12 +64,19 @@ const userController = {
             const investments = await Investment.find({ user: userId });
             const transactions = await Transaction.find({ user: userId }).sort({ date: -1 }).limit(10);
 
+            const totalInvestedValue = investments.reduce((sum, inv) => sum + inv.amount, 0);
+            const activeInvestedValue = investments
+                .filter(i => i.status === 'Active' || i.status === 'active')
+                .reduce((sum, inv) => sum + inv.amount, 0);
+
             res.json({
                 ...user.toObject(),
                 kycStatus: kyc ? kyc.status : 'Unverified',
                 kycDetails: kyc,
-                totalInvestments: investments.length,
-                activeInvestments: investments.filter(i => i.status === 'Active').length,
+                totalInvestmentsCount: investments.length,
+                activeInvestmentsCount: investments.filter(i => i.status === 'Active' || i.status === 'active').length,
+                totalInvestedValue,
+                activeInvestedValue,
                 recentTransactions: transactions
             });
         } catch (err) {
