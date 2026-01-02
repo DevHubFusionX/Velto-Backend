@@ -49,6 +49,7 @@ const processPayouts = async () => {
 
                 // Update user balance
                 investment.user.totalBalance += payoutAmount;
+                investment.user.totalReturns = (investment.user.totalReturns || 0) + payoutAmount;
                 await investment.user.save();
 
                 // Update investment
