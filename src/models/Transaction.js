@@ -54,7 +54,7 @@ const transactionSchema = new mongoose.Schema({
     },
     cryptoCurrency: {
         type: String,
-        enum: ['BTC', 'ETH', 'BNB', 'LTC', 'USDT_TRC20', 'USDT_ERC20', null],
+        enum: ['USDT_TRC20', 'USDT_ERC20', null],
         default: null
     },
     cryptoAmount: Number, // Amount in cryptocurrency
@@ -72,6 +72,8 @@ const transactionSchema = new mongoose.Schema({
 
 // Optimization Indexes
 transactionSchema.index({ user: 1, date: -1 });
-transactionSchema.index({ status: 1 });
+transactionSchema.index({ type: 1, status: 1 });
+transactionSchema.index({ type: 1, date: -1 });
+transactionSchema.index({ status: 1, unlockDate: 1 }); // for referral scheduler
 
 module.exports = mongoose.model('Transaction', transactionSchema);

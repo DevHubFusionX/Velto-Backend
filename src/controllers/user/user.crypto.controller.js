@@ -1,34 +1,21 @@
 const Transaction = require('../../models/Transaction');
 const User = require('../../models/User');
 const CryptoWallet = require('../../models/CryptoWallet');
-const UserCryptoWallet = require('../../models/UserCryptoWallet');
 const Settings = require('../../models/Settings');
 const { sendNotification, sendAdminNotification } = require('../../utils/notification');
-const nowpaymentsService = require('../../services/nowpayments.service');
+
+const USDT_INFO = {
+    USDT_TRC20: { name: 'USDT (TRC20)', network: 'TRC20' },
+    USDT_ERC20: { name: 'USDT (ERC20)', network: 'ERC20' }
+};
 
 const cryptoController = {
-    // Get user's auto-generated wallet addresses
-    getMyWallets: async (req, res) => {
-        try {
-            const wallets = await UserCryptoWallet.find({ user: req.user.id });
-            res.json(wallets);
-        } catch (err) {
-            console.error('Error fetching user wallets:', err);
-            res.status(500).json({ message: 'Error fetching your crypto wallets' });
-        }
-    },
+    getMyWallets: async (req, res) => res.json([]),
 
-    // Get admin deposit addresses (where users should send crypto)
     getDepositAddresses: async (req, res) => {
         try {
             const settings = await Settings.findOne();
-            const supportedCurrencies = settings?.crypto?.supportedCurrencies || [];
-
-            const wallets = await CryptoWallet.find({
-                isActive: true,
-                currency: { $in: supportedCurrencies }
-            });
-
+            const wallets = await CryptoWallet.find({ isActive: true, currency: { $in: ['USDT_TRC20', 'USDT_ERC20'] } });
             res.json({
                 wallets,
                 settings: {
@@ -40,46 +27,36 @@ const cryptoController = {
                 }
             });
         } catch (err) {
-            console.error('Error fetching deposit addresses:', err);
             res.status(500).json({ message: 'Error fetching deposit addresses' });
         }
     },
 
-    // Initiate a crypto deposit (user claims they sent crypto)
     initiateCryptoDeposit: async (req, res) => {
         try {
-            const { cryptoCurrency, amountUsd } = req.body;
+            const { cryptoCurrency, amountUsd, txHash } = req.body;
+
+            if (!USDT_INFO[cryptoCurrency]) {
+                return res.status(400).json({ message: 'Only USDT_TRC20 and USDT_ERC20 are supported' });
+            }
+            if (!txHash || !txHash.trim()) {
+                return res.status(400).json({ message: 'Transaction hash is required' });
+            }
 
             const settings = await Settings.findOne();
             if (!settings?.crypto?.enabled) {
-                return res.status(400).json({ message: 'Crypto deposits are currently disabled' });
+                return res.status(400).json({ message: 'Deposits are currently disabled' });
             }
 
             const minDeposit = settings.crypto.depositMinUsd || 10;
             const maxDeposit = settings.crypto.depositMaxUsd || 100000;
 
-            if (amountUsd < minDeposit) {
-                return res.status(400).json({ message: `Minimum deposit is $${minDeposit}` });
-            }
-            if (amountUsd > maxDeposit) {
-                return res.status(400).json({ message: `Maximum deposit is $${maxDeposit}` });
-            }
+            if (amountUsd < minDeposit) return res.status(400).json({ message: `Minimum deposit is $${minDeposit}` });
+            if (amountUsd > maxDeposit) return res.status(400).json({ message: `Maximum deposit is $${maxDeposit}` });
+
+            const existing = await Transaction.findOne({ txHash: txHash.trim() });
+            if (existing) return res.status(400).json({ message: 'This transaction hash has already been submitted' });
 
             const user = await User.findById(req.user.id);
-            const reference = `CRYPTO-DEP-${Date.now()}`;
-
-            console.log(`[Deposit] Creating payment for ${amountUsd} ${cryptoCurrency}`);
-            // 1. Create NOWPayments payment
-            const paymentData = await nowpaymentsService.createPayment(
-                amountUsd,
-                cryptoCurrency.toLowerCase(), // currency_from
-                cryptoCurrency.toLowerCase(), // currency_to (same coin for direct deposit)
-                reference,
-                `Deposit from ${user.email}`
-            );
-            console.log('[Deposit] NOWPayments payment created:', paymentData.payment_id);
-
-            // 2. Create Transaction record in our DB
             const transaction = await Transaction.create({
                 user: user._id,
                 type: 'Deposit',
@@ -87,122 +64,56 @@ const cryptoController = {
                 requestedAmount: amountUsd,
                 currency: 'USD',
                 status: 'Pending',
-                reference: reference,
+                reference: `USDT-DEP-${Date.now()}`,
                 method: 'Crypto',
-                description: `Automated Crypto deposit via ${cryptoCurrency}`,
+                description: `USDT deposit via ${USDT_INFO[cryptoCurrency].network}`,
                 isCrypto: true,
                 cryptoCurrency,
-                paymentId: paymentData.payment_id,
-                payAddress: paymentData.pay_address,
-                payAmount: paymentData.pay_amount,
-                paymentStatus: paymentData.payment_status,
-                network: cryptoCurrency.includes('USDT') ? (cryptoCurrency.includes('TRC20') ? 'TRC20' : 'ERC20') : cryptoCurrency
+                txHash: txHash.trim(),
+                network: USDT_INFO[cryptoCurrency].network
             });
-            console.log('[Deposit] Transaction record created:', transaction._id);
 
-            await sendNotification(
-                user._id,
-                'Deposit Address Generated',
-                `Please send ${paymentData.pay_amount} ${cryptoCurrency} to the generated address.`,
-                'deposit',
-                'normal',
-                { transactionId: transaction._id }
-            );
-            console.log('[Deposit] Notification triggered');
+            await sendNotification(user._id, 'Deposit Submitted',
+                `Your USDT deposit of $${amountUsd} is pending admin verification.`,
+                'deposit', 'normal', { transactionId: transaction._id });
 
-            res.json({
-                message: 'Deposit address generated',
-                payAddress: paymentData.pay_address,
-                payAmount: paymentData.pay_amount,
-                paymentId: paymentData.payment_id,
-                transaction
-            });
+            await sendAdminNotification('New USDT Deposit',
+                `${user.email} submitted a $${amountUsd} USDT (${USDT_INFO[cryptoCurrency].network}) deposit. TX: ${txHash}`,
+                'deposit', 'high', { transactionId: transaction._id, userId: user._id });
+
+            res.json({ message: 'Deposit submitted for verification', transaction });
         } catch (err) {
-            console.error('Error initiating crypto deposit:', err);
-
-            // Extract specific gateway error details
-            const gatewayError = err.response?.data;
-            let errorMessage = 'Error processing crypto deposit. Please try again.';
-            let statusCode = 500;
-
-            if (gatewayError) {
-                if (gatewayError.code === 'AMOUNT_MINIMAL_ERROR') {
-                    errorMessage = `The amount is too low for ${cryptoCurrency}. Please try a higher amount (e.g. $20).`;
-                    statusCode = 400;
-                } else if (gatewayError.message) {
-                    errorMessage = gatewayError.message;
-                }
-            }
-
-            res.status(statusCode).json({
-                message: errorMessage,
-                error: err.message,
-                details: gatewayError || null
-            });
+            console.error('Error initiating deposit:', err);
+            res.status(500).json({ message: 'Error processing deposit' });
         }
     },
 
-    // Submit manual proof/hash for faster verification
-    submitCryptoProof: async (req, res) => {
-        try {
-            const { transactionId } = req.params;
-            const { txHash, proofUrl } = req.body;
+    submitCryptoProof: async (req, res) => res.status(410).json({ message: 'Submit TX hash via initiateCryptoDeposit instead' }),
 
-            const transaction = await Transaction.findOne({ _id: transactionId, user: req.user.id });
-            if (!transaction) {
-                return res.status(404).json({ message: 'Transaction not found' });
-            }
-
-            if (transaction.status !== 'Pending') {
-                return res.status(400).json({ message: 'Transaction already processed' });
-            }
-
-            if (txHash) transaction.txHash = txHash;
-            if (proofUrl) transaction.proofUrl = proofUrl;
-
-            transaction.description = `${transaction.description} (Manual Proof Submitted)`;
-            await transaction.save();
-
-            await sendAdminNotification(
-                'Manual Crypto Proof Submitted',
-                `User ${req.user.email} submitted manual proof for $${transaction.amount} ${transaction.cryptoCurrency}`,
-                'deposit',
-                'high',
-                { transactionId: transaction._id }
-            );
-
-            res.json({ message: 'Proof submitted successfully. Admin will verify.', transaction });
-        } catch (err) {
-            console.error('Error submitting crypto proof:', err);
-            res.status(500).json({ message: 'Error submitting proof' });
-        }
-    },
-
-    // Request crypto withdrawal
     requestCryptoWithdrawal: async (req, res) => {
         try {
-            const { cryptoCurrency, cryptoAddress, amountUsd, network } = req.body;
+            const { cryptoCurrency, cryptoAddress, amountUsd } = req.body;
+
+            if (!USDT_INFO[cryptoCurrency]) {
+                return res.status(400).json({ message: 'Only USDT_TRC20 and USDT_ERC20 are supported' });
+            }
+            if (!cryptoAddress || !cryptoAddress.trim()) {
+                return res.status(400).json({ message: 'USDT wallet address is required' });
+            }
 
             const settings = await Settings.findOne();
             if (!settings?.crypto?.enabled) {
-                return res.status(400).json({ message: 'Crypto withdrawals are currently disabled' });
+                return res.status(400).json({ message: 'Withdrawals are currently disabled' });
             }
 
             const minWithdraw = settings.crypto.withdrawalMinUsd || 20;
             const maxWithdraw = settings.crypto.withdrawalMaxUsd || 50000;
 
-            if (amountUsd < minWithdraw) {
-                return res.status(400).json({ message: `Minimum withdrawal is $${minWithdraw}` });
-            }
-            if (amountUsd > maxWithdraw) {
-                return res.status(400).json({ message: `Maximum withdrawal is $${maxWithdraw}` });
-            }
+            if (amountUsd < minWithdraw) return res.status(400).json({ message: `Minimum withdrawal is $${minWithdraw}` });
+            if (amountUsd > maxWithdraw) return res.status(400).json({ message: `Maximum withdrawal is $${maxWithdraw}` });
 
             const user = await User.findById(req.user.id);
-
-            if (amountUsd > user.totalBalance) {
-                return res.status(400).json({ message: 'Insufficient funds' });
-            }
+            if (amountUsd > user.totalBalance) return res.status(400).json({ message: 'Insufficient funds' });
 
             const transaction = await Transaction.create({
                 user: user._id,
@@ -210,45 +121,31 @@ const cryptoController = {
                 amount: -amountUsd,
                 currency: 'USD',
                 status: 'Pending',
-                reference: `CRYPTO-WTH-${Date.now()}`,
+                reference: `USDT-WTH-${Date.now()}`,
                 method: 'Crypto',
-                description: `Crypto withdrawal to ${cryptoCurrency} wallet`,
+                description: `USDT withdrawal to ${USDT_INFO[cryptoCurrency].network} wallet`,
                 isCrypto: true,
                 cryptoCurrency,
-                cryptoAddress,
-                network
+                cryptoAddress: cryptoAddress.trim(),
+                network: USDT_INFO[cryptoCurrency].network
             });
 
-            // Lock the funds
             user.totalBalance -= amountUsd;
             user.lockedBalance += amountUsd;
             await user.save();
 
-            await sendNotification(
-                user._id,
-                'Crypto Withdrawal Requested',
-                `Your withdrawal of $${amountUsd} to ${cryptoCurrency} wallet has been submitted.`,
-                'withdrawal',
-                'high',
-                { transactionId: transaction._id }
-            );
+            await sendNotification(user._id, 'Withdrawal Requested',
+                `Your withdrawal of $${amountUsd} USDT (${USDT_INFO[cryptoCurrency].network}) is pending processing.`,
+                'withdrawal', 'high', { transactionId: transaction._id });
 
-            await sendAdminNotification(
-                'New Crypto Withdrawal Request',
-                `User ${user.email} requested ${cryptoCurrency} withdrawal of $${amountUsd} to ${cryptoAddress}`,
-                'admin',
-                'high',
-                { transactionId: transaction._id, userId: user._id }
-            );
+            await sendAdminNotification('New USDT Withdrawal Request',
+                `${user.email} requested $${amountUsd} USDT (${USDT_INFO[cryptoCurrency].network}) to ${cryptoAddress}`,
+                'admin', 'high', { transactionId: transaction._id, userId: user._id });
 
-            res.json({
-                message: 'Crypto withdrawal request submitted',
-                newBalance: user.totalBalance,
-                transaction
-            });
+            res.json({ message: 'Withdrawal request submitted', newBalance: user.totalBalance, transaction });
         } catch (err) {
-            console.error('Error processing crypto withdrawal:', err);
-            res.status(500).json({ message: 'Error processing crypto withdrawal' });
+            console.error('Error processing withdrawal:', err);
+            res.status(500).json({ message: 'Error processing withdrawal' });
         }
     }
 };

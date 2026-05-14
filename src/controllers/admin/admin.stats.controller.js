@@ -17,14 +17,17 @@ const statsController = {
             const pendingKYC = await KYC.countDocuments({ status: 'Pending' });
             const newKYC24h = await KYC.countDocuments({ submittedAt: { $gte: twentyFourHoursAgo } });
 
-            const activeInvestments = await Investment.countDocuments({ status: 'Active' });
+            const [legacyActiveInvestments, newActiveInvestments] = await Promise.all([
+                Investment.find({ status: 'Active' }),
+                UserInvestment.find({ status: 'active' })
+            ]);
+            const activeInvestments = legacyActiveInvestments.length + newActiveInvestments.length;
             const newInvestments24h = await Investment.countDocuments({ createdAt: { $gte: twentyFourHoursAgo } });
-            const investmentsNow = await Investment.find({ status: 'Active' });
-            const totalInvested = investmentsNow.reduce((sum, inv) => sum + inv.amount, 0);
+            const totalInvested = [...legacyActiveInvestments, ...newActiveInvestments].reduce((sum, inv) => sum + inv.amount, 0);
 
-            // Calculate Total User Wallets Balance
-            const allUsers = await User.find({});
-            const totalUserBalance = allUsers.reduce((sum, user) => sum + (user.totalBalance || 0), 0);
+            // Calculate Total User Wallets Balance using aggregation
+            const balanceAgg = await User.aggregate([{ $group: { _id: null, total: { $sum: '$totalBalance' } } }]);
+            const totalUserBalance = balanceAgg[0]?.total || 0;
 
             const withdrawals = await Transaction.find({ type: 'Withdrawal', status: 'Pending' });
             const pendingWithAmount = withdrawals.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);

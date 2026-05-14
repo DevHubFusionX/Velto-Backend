@@ -1,8 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { initializeScheduler } = require('./services/payout.scheduler');
-
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
@@ -10,11 +8,6 @@ const xss = require('xss-clean');
 const hpp = require('hpp');
 
 dotenv.config();
-
-// Start Cron Jobs
-initializeScheduler();
-// const { startCronOnly } = require('./services/cronService');
-// startCronOnly();
 
 const app = express();
 
@@ -97,10 +90,8 @@ app.use('/api/auth', require('./routes/auth.routes.js'));
 app.use('/api/user', require('./routes/user.routes.js'));
 app.use('/api/investments', require('./routes/investment.routes.js'));
 app.use('/api/products', require('./routes/product.routes.js'));
-app.use('/api/opportunities', require('./routes/opportunity.routes.js'));
 app.use('/api/community', require('./routes/community.routes.js'));
 app.use('/api/admin', require('./routes/admin.routes.js'));
-
 app.use('/api/upload', require('./routes/upload.routes.js'));
 
 // Custom Error Handler

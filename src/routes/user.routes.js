@@ -12,8 +12,6 @@ router.put('/profile', validateRequest(userSchemas.updateProfile), userControlle
 router.get('/dashboard', userController.getDashboard);
 router.get('/notifications', userController.getNotifications);
 router.put('/notifications/:id/read', userController.markNotificationRead);
-router.post('/deposit', validateRequest(userSchemas.deposit), userController.deposit);
-router.post('/withdraw', validateRequest(userSchemas.withdraw), userController.withdraw);
 router.get('/transactions', userController.getTransactions);
 router.post('/invest', validateRequest(userSchemas.invest), userController.invest);
 router.post('/investments/:investmentId/withdraw', userController.withdrawInvestment);

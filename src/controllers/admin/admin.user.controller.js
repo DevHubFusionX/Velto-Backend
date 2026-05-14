@@ -9,41 +9,42 @@ const userController = {
     getUsers: async (req, res) => {
         try {
             const users = await User.find().select('-password').sort({ createdAt: -1 });
+            const userIds = users.map(u => u._id);
 
-            const investments = await Investment.find({});
-            const userInvestments = await UserInvestment.find({});
+            const [investments, userInvestments, kycList] = await Promise.all([
+                Investment.find({ user: { $in: userIds } }).select('user amount status'),
+                UserInvestment.find({ user: { $in: userIds } }).select('user amount status'),
+                KYC.find({ user: { $in: userIds } }).select('user status')
+            ]);
+
             const investmentMap = {};
+            const kycMap = {};
 
             const aggregate = (list) => {
                 list.forEach(inv => {
-                    const userId = inv.user?._id || inv.user;
-                    if (!userId) return;
-
-                    if (!investmentMap[userId]) {
-                        investmentMap[userId] = { total: 0, active: 0 };
-                    }
+                    const userId = inv.user.toString();
+                    if (!investmentMap[userId]) investmentMap[userId] = { total: 0, active: 0 };
                     investmentMap[userId].total += inv.amount;
-                    if (inv.status === 'Active' || inv.status === 'active') {
+                    if (inv.status === 'Active' || inv.status === 'active')
                         investmentMap[userId].active += inv.amount;
-                    }
                 });
             };
 
             aggregate(investments);
             aggregate(userInvestments);
+            kycList.forEach(k => { kycMap[k.user.toString()] = k.status; });
 
-            const enrichedUsers = await Promise.all(users.map(async (user) => {
-                const kyc = await KYC.findOne({ user: user._id });
-                const userInvData = investmentMap[user._id] || { total: 0, active: 0 };
-
+            const enrichedUsers = users.map(user => {
+                const uid = user._id.toString();
+                const userInvData = investmentMap[uid] || { total: 0, active: 0 };
                 return {
                     ...user.toObject(),
-                    kycStatus: kyc ? kyc.status : 'Unverified',
+                    kycStatus: kycMap[uid] || 'Unverified',
                     joinedAt: user.createdAt,
                     totalInvestedCalculated: userInvData.total,
                     activeHoldings: userInvData.active
                 };
-            }));
+            });
 
             res.json(enrichedUsers);
         } catch (err) {

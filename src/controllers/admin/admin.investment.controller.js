@@ -23,7 +23,7 @@ const investmentController = {
     updatePlan: async (req, res) => {
         try {
             const plan = await InvestmentPlan.findByIdAndUpdate(req.params.id, req.body, {
-                new: true,
+                returnDocument: 'after',
                 runValidators: true
             });
             if (!plan) return res.status(404).json({ success: false, error: 'Plan not found' });

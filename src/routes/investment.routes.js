@@ -9,7 +9,6 @@ router.use(auth.protect);
 
 // User Routes
 router.get('/', userInvestmentController.getMyInvestments);
-router.get('/my/investments', userInvestmentController.getMyInvestments);
 router.post('/invest', userInvestmentController.invest);
 router.get('/plans/list', userInvestmentController.getPlans);
 

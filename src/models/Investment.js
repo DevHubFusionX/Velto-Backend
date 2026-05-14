@@ -39,4 +39,8 @@ const investmentSchema = new mongoose.Schema({
     }
 });
 
+// Indexes
+investmentSchema.index({ user: 1, status: 1 });
+investmentSchema.index({ status: 1 });
+
 module.exports = mongoose.model('Investment', investmentSchema);

@@ -45,11 +45,12 @@ const settingsController = {
 
     updateSettings: async (req, res) => {
         try {
-            const settings = await Settings.findOneAndUpdate({}, req.body, {
-                new: true,
-                upsert: true,
-                setDefaultsOnInsert: true
-            });
+            const { _id, __v, updatedAt, ...allowedFields } = req.body;
+            const settings = await Settings.findOneAndUpdate(
+                {},
+                { $set: { ...allowedFields, updatedAt: new Date() } },
+                { new: true, upsert: true, setDefaultsOnInsert: true }
+            );
             await logSecurityEvent({
                 user: req.user.id,
                 action: 'SETTINGS_UPDATE',

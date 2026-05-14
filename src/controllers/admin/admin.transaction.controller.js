@@ -6,10 +6,15 @@ const { logSecurityEvent } = require('../../utils/logger');
 const transactionController = {
     getWithdrawals: async (req, res) => {
         try {
-            const withdrawals = await Transaction.find({ type: 'Withdrawal' })
-                .populate('user', 'name email')
-                .sort({ date: -1 });
-            res.json(withdrawals);
+            const { status, page = 1, limit = 20 } = req.query;
+            const query = { type: 'Withdrawal' };
+            if (status) query.status = status;
+            const skip = (page - 1) * limit;
+            const [withdrawals, total] = await Promise.all([
+                Transaction.find(query).populate('user', 'name email').sort({ date: -1 }).skip(skip).limit(parseInt(limit)),
+                Transaction.countDocuments(query)
+            ]);
+            res.json({ data: withdrawals, total, page: parseInt(page), pages: Math.ceil(total / limit) });
         } catch (err) {
             res.status(500).json({ message: 'Error fetching withdrawals' });
         }
@@ -28,7 +33,7 @@ const transactionController = {
                 return res.status(400).json({ message: 'Transaction already processed' });
             }
 
-            const user = await User.findById(transaction.user._id);
+            const user = transaction.user;
             user.lockedBalance -= Math.abs(transaction.amount);
             await user.save();
 
@@ -36,7 +41,7 @@ const transactionController = {
             await transaction.save();
 
             await sendNotification(
-                transaction.user._id,
+                user._id,
                 'Withdrawal Processed',
                 `Your withdrawal of ${Math.abs(transaction.amount)} ${transaction.currency} has been approved and processed.`,
                 'success',
@@ -65,7 +70,7 @@ const transactionController = {
                 return res.status(400).json({ message: 'Transaction already processed' });
             }
 
-            const user = await User.findById(transaction.user._id);
+            const user = transaction.user;
             user.lockedBalance -= Math.abs(transaction.amount);
             user.totalBalance += Math.abs(transaction.amount);
             await user.save();
@@ -92,14 +97,18 @@ const transactionController = {
 
     getDeposits: async (req, res) => {
         try {
-            const deposits = await Transaction.find({
-                type: 'Deposit'
-            }).populate('user', 'name email').sort({ date: -1 });
-
-            res.json(deposits);
+            const { status, page = 1, limit = 20 } = req.query;
+            const query = { type: 'Deposit' };
+            if (status) query.status = status;
+            const skip = (page - 1) * limit;
+            const [deposits, total] = await Promise.all([
+                Transaction.find(query).populate('user', 'name email').sort({ date: -1 }).skip(skip).limit(parseInt(limit)),
+                Transaction.countDocuments(query)
+            ]);
+            res.json({ data: deposits, total, page: parseInt(page), pages: Math.ceil(total / limit) });
         } catch (err) {
             console.error(err);
-            res.status(500).json({ message: 'Error fetching pending deposits' });
+            res.status(500).json({ message: 'Error fetching deposits' });
         }
     },
 

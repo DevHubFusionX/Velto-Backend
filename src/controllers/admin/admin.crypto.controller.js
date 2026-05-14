@@ -4,6 +4,7 @@ const User = require('../../models/User');
 const UserCryptoWallet = require('../../models/UserCryptoWallet');
 const { sendNotification } = require('../../utils/notification');
 const { logSecurityEvent } = require('../../utils/logger');
+const { verifyUSDTTransaction } = require('../../services/blockchain.service');
 
 const adminCryptoController = {
     // --- Admin Wallet Management ---
@@ -124,23 +125,47 @@ const adminCryptoController = {
     approveCryptoDeposit: async (req, res) => {
         try {
             const { transactionId } = req.params;
-            const { verifiedAmount, verifiedTxHash } = req.body;
 
             const transaction = await Transaction.findById(transactionId).populate('user');
-            if (!transaction) {
-                return res.status(404).json({ message: 'Transaction not found' });
+            if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
+            if (transaction.status !== 'Pending') return res.status(400).json({ message: 'Transaction already processed' });
+
+            const txHash = transaction.txHash;
+            const network = transaction.network; // 'TRC20' or 'ERC20'
+
+            if (!txHash) return res.status(400).json({ message: 'No transaction hash on record' });
+
+            // Find the deposit wallet address for this network
+            const depositWallet = await CryptoWallet.findOne({
+                network,
+                isActive: true
+            });
+            if (!depositWallet) {
+                return res.status(400).json({ message: `No active ${network} deposit wallet configured` });
             }
 
-            if (transaction.status !== 'Pending') {
-                return res.status(400).json({ message: 'Transaction already processed' });
+            // Verify on-chain
+            console.log(`[Verify] Checking ${network} TX: ${txHash}`);
+            const verification = await verifyUSDTTransaction({
+                txHash,
+                network,
+                depositWalletAddress: depositWallet.address,
+                expectedAmountUsd: transaction.amount
+            });
+
+            if (!verification.valid) {
+                return res.status(400).json({
+                    message: `On-chain verification failed: ${verification.error}`,
+                    verified: false
+                });
             }
 
-            const finalAmount = verifiedAmount !== undefined ? parseFloat(verifiedAmount) : transaction.amount;
+            // Use the actual on-chain amount (more accurate than user-submitted)
+            const finalAmount = verification.actualAmount;
 
             transaction.amount = finalAmount;
             transaction.status = 'Completed';
-            transaction.txHash = verifiedTxHash || transaction.txHash;
-            transaction.description = `${transaction.description} - Verified & Approved`;
+            transaction.description = `${transaction.description} - Auto-verified on-chain`;
             transaction.verifiedAt = new Date();
             transaction.verifiedBy = req.user.id;
             await transaction.save();
@@ -152,21 +177,24 @@ const adminCryptoController = {
             await logSecurityEvent({
                 user: req.user.id,
                 action: 'CRYPTO_DEPOSIT_APPROVED',
-                details: `Approved crypto deposit ${transaction.reference} for $${finalAmount}`,
+                details: `Auto-verified & approved ${network} deposit ${txHash} for $${finalAmount}`,
                 status: 'success',
                 req
             });
 
             await sendNotification(
                 user._id,
-                'Crypto Deposit Confirmed',
-                `Your ${transaction.cryptoCurrency} deposit of $${finalAmount} has been verified and credited.`,
-                'success',
-                'high',
-                { transactionId: transaction._id }
+                'Deposit Confirmed',
+                `Your USDT (${network}) deposit of $${finalAmount} has been verified on-chain and credited to your account.`,
+                'success', 'high', { transactionId: transaction._id }
             );
 
-            res.json({ message: 'Crypto deposit approved', transaction });
+            res.json({
+                message: 'Deposit verified and approved',
+                verified: true,
+                onChainAmount: finalAmount,
+                transaction
+            });
         } catch (err) {
             console.error('Error approving crypto deposit:', err);
             res.status(500).json({ message: 'Error approving deposit' });

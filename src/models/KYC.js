@@ -28,4 +28,9 @@ const kycSchema = new mongoose.Schema({
     adminNotes: String
 });
 
+// Indexes
+kycSchema.index({ user: 1 }, { unique: true });
+kycSchema.index({ status: 1 });
+kycSchema.index({ submittedAt: -1 });
+
 module.exports = mongoose.model('KYC', kycSchema);

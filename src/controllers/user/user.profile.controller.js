@@ -19,15 +19,27 @@ const profileController = {
 
     updateProfile: async (req, res) => {
         try {
-            const user = await User.findByIdAndUpdate(req.user.id, req.body, {
-                new: true,
-                runValidators: true
-            });
-            res.json({
-                message: 'Profile updated successfully',
-                user
-            });
+            const { name, phone, location, currentPassword, newPassword } = req.body;
+
+            const user = await User.findById(req.user.id).select('+password');
+
+            // Handle password change
+            if (newPassword) {
+                if (!currentPassword) return res.status(400).json({ message: 'Current password is required' });
+                const isMatch = await user.matchPassword(currentPassword);
+                if (!isMatch) return res.status(400).json({ message: 'Current password is incorrect' });
+                user.password = newPassword;
+            }
+
+            // Update allowed fields only
+            if (name) user.name = name;
+            if (phone !== undefined) user.phone = phone;
+            if (location !== undefined) user.location = location;
+
+            await user.save();
+            res.json({ message: 'Profile updated successfully', user });
         } catch (err) {
+            console.error(err);
             res.status(500).json({ message: 'Error updating profile' });
         }
     },
@@ -84,25 +96,36 @@ const profileController = {
             });
             const totalReferralEarned = referralTransactions.reduce((sum, tx) => sum + tx.amount, 0);
 
-            // Referral History
+            // Referral History - batch queries to avoid N+1
             const recentlyReferred = await User.find({ referredBy: req.user.id })
                 .sort({ joinDate: -1 })
-                .limit(5);
+                .limit(5)
+                .select('name joinDate _id');
 
-            const referralHistory = await Promise.all(recentlyReferred.map(async (ref) => {
-                const bonusTx = await Transaction.findOne({
-                    user: req.user.id,
-                    type: 'Referral',
-                    description: { $regex: new RegExp(ref.name, 'i') }
-                });
+            const referredIds = recentlyReferred.map(r => r._id);
 
+            const [referralBonusTxs, activeInvIds, activeUserInvIds] = await Promise.all([
+                Transaction.find({ user: req.user.id, type: 'Referral' }).select('amount description'),
+                Investment.find({ user: { $in: referredIds } }).distinct('user'),
+                UserInvestment.find({ user: { $in: referredIds } }).distinct('user')
+            ]);
+
+            const activeReferredSet = new Set([
+                ...activeInvIds.map(id => id.toString()),
+                ...activeUserInvIds.map(id => id.toString())
+            ]);
+
+            const referralHistory = recentlyReferred.map(ref => {
+                const bonusTx = referralBonusTxs.find(tx =>
+                    tx.description && tx.description.toLowerCase().includes(ref.name.toLowerCase())
+                );
                 return {
                     name: ref.name,
                     date: ref.joinDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                    status: (await Investment.exists({ user: ref._id })) || (await UserInvestment.exists({ user: ref._id })) ? 'Active' : 'Joined',
+                    status: activeReferredSet.has(ref._id.toString()) ? 'Active' : 'Joined',
                     bonus: bonusTx ? bonusTx.amount : 0
                 };
-            }));
+            });
 
             // Fetch Active Investment Plans
             const plans = await InvestmentPlan.find({ status: 'active' });

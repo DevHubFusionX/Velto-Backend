@@ -1,8 +1,7 @@
 const mongoose = require('mongoose');
 
 /**
- * Settings Schema - Crypto Only Platform
- * Fiat (NGN/USD) limits have been removed
+ * Settings Schema - USDT Only Platform
  * All transactions are crypto-based
  */
 const settingsSchema = new mongoose.Schema({
@@ -35,7 +34,7 @@ const settingsSchema = new mongoose.Schema({
         enabled: { type: Boolean, default: true },
         supportedCurrencies: {
             type: [String],
-            default: ['BTC', 'ETH', 'BNB', 'USDT_TRC20', 'USDT_ERC20']
+            default: ['USDT_TRC20', 'USDT_ERC20']
         },
         depositMinUsd: { type: Number, default: 15 },
         depositMaxUsd: { type: Number, default: 100000 },

@@ -151,10 +151,7 @@ const initializeScheduler = () => {
 
     console.log('[Payout Scheduler] Initialized - Running every hour');
 
-    // Optional: Run immediately on startup for verification if in dev
-    if (process.env.NODE_ENV === 'development') {
-        processReferralRewards();
-    }
+
 };
 
 /**
@@ -168,5 +165,6 @@ const triggerManualPayout = async () => {
 module.exports = {
     initializeScheduler,
     triggerManualPayout,
-    processPayouts
+    processPayouts,
+    processReferralRewards
 };

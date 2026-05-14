@@ -15,13 +15,13 @@ const http = require('http');
 const { initializeSocket } = require('./src/socket');
 
 // Connect to Database
-connectDB();
+connectDB().then(() => {
+    // Initialize Payout Scheduler after DB is ready
+    initializeScheduler();
+});
 
 // Verify Email Service Connection
 verifyConnection();
-
-// Initialize Payout Scheduler
-initializeScheduler();
 
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);

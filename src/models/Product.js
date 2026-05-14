@@ -11,14 +11,8 @@ const productSchema = new mongoose.Schema({
         required: true
     },
     description: String,
-    minInvestment: {
-        usd: Number,
-        ngn: Number
-    },
-    maxInvestment: {
-        usd: Number,
-        ngn: Number
-    },
+    minInvestment: { type: Number },
+    maxInvestment: { type: Number },
     roi: {
         type: String, // e.g., "12-15%"
         required: true

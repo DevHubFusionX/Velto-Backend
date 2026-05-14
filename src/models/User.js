@@ -115,6 +115,9 @@ const userSchema = new mongoose.Schema({
 // Optimization Indexes
 userSchema.index({ referredBy: 1 });
 userSchema.index({ isEmailVerified: 1 });
+userSchema.index({ role: 1 });
+userSchema.index({ lastActive: -1 });
+userSchema.index({ createdAt: -1 });
 
 // Encrypt password using bcrypt
 userSchema.pre('save', async function() {

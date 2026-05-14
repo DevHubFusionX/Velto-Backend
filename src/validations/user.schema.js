@@ -8,30 +8,14 @@ const userSchemas = {
     }),
 
     deposit: Joi.object({
-        amount: Joi.number().positive().required().messages({
-            'number.base': 'Amount must be a number',
-            'number.positive': 'Amount must be greater than zero',
-            'any.required': 'Amount is required'
-        }),
-        method: Joi.string().required().messages({
-            'string.empty': 'Payment method is required'
-        }),
-        currency: Joi.string().valid('USD', 'NGN').required().messages({
-            'any.only': 'Currency must be either USD or NGN'
-        }),
-        proofUrl: Joi.string().optional().allow(null, '').messages({
-            'string.base': 'Proof URL must be a string'
-        })
+        amount: Joi.number().positive().required(),
+        method: Joi.string().optional(),
+        currency: Joi.string().valid('USD').default('USD')
     }),
 
     withdraw: Joi.object({
         amount: Joi.number().positive().required(),
-        currency: Joi.string().valid('USD', 'NGN').required(),
-        bankDetails: Joi.object({
-            bankName: Joi.string().required(),
-            accountNumber: Joi.string().required(),
-            accountName: Joi.string().required()
-        }).required()
+        currency: Joi.string().valid('USD').default('USD')
     }),
 
     invest: Joi.object({
@@ -42,7 +26,7 @@ const userSchemas = {
             'number.base': 'Amount must be a number',
             'number.positive': 'Amount must be greater than zero'
         }),
-        currency: Joi.string().valid('USD', 'NGN').required()
+        currency: Joi.string().valid('USD').default('USD')
     })
 };
 
