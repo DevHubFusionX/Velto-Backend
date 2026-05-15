@@ -78,12 +78,16 @@ app.get('/', (req, res) => {
 // Maintenance Middleware
 const maintenanceMiddleware = require('./middleware/maintenance.middleware');
 const ipEnforcementMiddleware = require('./middleware/ipEnforcement.middleware');
+const csrfProtect = require('./middleware/csrf.middleware');
 
 app.use(maintenanceMiddleware);
 app.use(ipEnforcementMiddleware);
 
-// Webhooks (Must be before maintenance/auth for NOWPayments)
+// Webhooks (Must be before CSRF/maintenance/auth for NOWPayments)
 app.use('/api/webhooks', require('./routes/webhook.routes.js'));
+
+// CSRF protection on all other API routes
+app.use('/api', csrfProtect);
 
 // Routes
 app.use('/api/auth', require('./routes/auth.routes.js'));

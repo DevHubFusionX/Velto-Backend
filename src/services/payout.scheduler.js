@@ -44,17 +44,24 @@ const processPayouts = async () => {
                     continue;
                 }
 
-                // Process payout
+                // Process payout — amount is frozen at invest time based on user's invested amount
                 const payoutAmount = investment.dailyPayoutAmount;
 
                 // Update user balance
-                investment.user.totalBalance += payoutAmount;
+                investment.user.totalBalance = (investment.user.totalBalance || 0) + payoutAmount;
                 investment.user.totalReturns = (investment.user.totalReturns || 0) + payoutAmount;
                 await investment.user.save();
 
-                // Update investment
-                investment.totalPayoutReceived += payoutAmount;
-                investment.nextPayoutDate = new Date(investment.nextPayoutDate.getTime() + 24 * 60 * 60 * 1000); // +1 day
+                // Advance nextPayoutDate by exactly 1 day and accumulate total received
+                const nextDate = new Date(investment.nextPayoutDate.getTime() + 24 * 60 * 60 * 1000);
+                investment.totalPayoutReceived = (investment.totalPayoutReceived || 0) + payoutAmount;
+                investment.nextPayoutDate = nextDate;
+
+                // Mark completed if this was the last payout
+                if (nextDate >= investment.endDate) {
+                    investment.status = 'completed';
+                }
+
                 await investment.save();
 
                 // Create payout record
@@ -63,7 +70,7 @@ const processPayouts = async () => {
                     investment: investment._id,
                     amount: payoutAmount,
                     type: 'daily',
-                    notes: 'Daily payout processed'
+                    notes: `Daily payout — invested: $${investment.amount}, daily rate: $${payoutAmount}`
                 });
 
                 // Create Transaction Record (for user history)

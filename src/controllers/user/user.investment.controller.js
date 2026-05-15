@@ -69,7 +69,6 @@ const investmentController = {
 
     // @desc    User invests in a plan or legacy product
     invest: async (req, res) => {
-        console.log('--- CONSOLIDATED INVEST CALLED ---');
         const { planId, productId, amount } = req.body;
         const targetId = planId || productId;
         const numAmount = parseFloat(amount);
@@ -184,8 +183,8 @@ const investmentController = {
             return res.status(404).json({ success: false, error: 'Product/Plan not found' });
 
         } catch (err) {
-            console.error(err);
-            res.status(500).json({ success: false, error: 'Server Error' });
+            console.error('[invest] error:', err.message);
+            res.status(500).json({ success: false, error: 'Investment failed. Please try again.' });
         }
     },
 
@@ -223,8 +222,8 @@ const investmentController = {
                 data: allInvestments
             });
         } catch (err) {
-            console.error('Error in getMyInvestments:', err);
-            res.status(400).json({ success: false, error: err.message });
+            console.error('[getMyInvestments] error:', err.message);
+            res.status(400).json({ success: false, error: 'Failed to fetch investments.' });
         }
     },
 
@@ -359,7 +358,7 @@ async function handleReferralBonus(user, amount) {
                     referrer.lifetimeReferralEarnings = (referrer.lifetimeReferralEarnings || 0) + finalReward;
                     await referrer.save();
 
-                    console.log(`[REFERRAL] Pending reward log for Referrer: ${referrer.email}`);
+                    console.log(`[REFERRAL] Reward queued for referrer ID: ${referrer._id}`);
                 }
             }
         }
@@ -379,7 +378,7 @@ async function sendInvestmentNotifications(user, name, amount, investmentId) {
     const isHighValue = amount >= 1000;
     await sendAdminNotification(
         isHighValue ? '🔥 High-Value Investment Alert' : 'New Investment Created',
-        `User ${user.email} invested $${amount} in ${name}.`,
+        `A user invested $${amount} in ${name}.`,
         'admin',
         isHighValue ? 'high' : 'normal',
         { investmentId, userId: user._id, amount }

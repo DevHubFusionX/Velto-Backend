@@ -19,7 +19,6 @@ const validateRequest = (schema, source = 'body') => {
 
         if (error) {
             const errorMessages = error.details.map(detail => detail.message);
-            console.log(`[VALIDATION ERROR] ${req.method} ${req.url}:`, errorMessages);
             return res.status(400).json({
                 message: 'Validation Error',
                 errors: errorMessages

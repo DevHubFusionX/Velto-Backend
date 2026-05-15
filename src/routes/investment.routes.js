@@ -3,13 +3,22 @@ const router = express.Router();
 const userInvestmentController = require('../controllers/user/user.investment.controller');
 const adminInvestmentController = require('../controllers/admin/admin.investment.controller');
 const auth = require('../middleware/auth');
+const validateRequest = require('../middleware/validateRequest');
+const Joi = require('joi');
+
+const investSchema = Joi.object({
+    planId: Joi.string().hex().length(24),
+    productId: Joi.string().hex().length(24),
+    amount: Joi.number().positive().max(10000000).required(),
+    currency: Joi.string().valid('USD').default('USD')
+}).or('planId', 'productId');
 
 // Private routes
 router.use(auth.protect);
 
 // User Routes
 router.get('/', userInvestmentController.getMyInvestments);
-router.post('/invest', userInvestmentController.invest);
+router.post('/invest', validateRequest(investSchema), userInvestmentController.invest);
 router.get('/plans/list', userInvestmentController.getPlans);
 
 // Admin Routes

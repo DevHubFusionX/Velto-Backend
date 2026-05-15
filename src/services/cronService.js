@@ -25,8 +25,13 @@ const runDailyPayouts = async () => {
                 if (!user) continue;
 
                 user.totalBalance += investment.dailyPayoutAmount;
-                user.totalReturns += investment.dailyPayoutAmount;
+                user.totalReturns = (user.totalReturns || 0) + investment.dailyPayoutAmount;
                 await user.save();
+
+                // Update investment tracking fields
+                const nextPayoutDate = new Date(investment.nextPayoutDate.getTime() + 24 * 60 * 60 * 1000);
+                investment.totalPayoutReceived = (investment.totalPayoutReceived || 0) + investment.dailyPayoutAmount;
+                investment.nextPayoutDate = nextPayoutDate;
 
                 // 2. Create Transaction Record
                 await Transaction.create({
@@ -35,36 +40,34 @@ const runDailyPayouts = async () => {
                     amount: investment.dailyPayoutAmount,
                     status: 'Completed',
                     reference: `INV-${investment._id}-${Date.now()}`,
-                    description: `Daily ROI for plan: ${investment.plan}`, // Ideally populate plan details if needed
+                    description: `Daily ROI for plan: ${investment.plan}`,
                 });
-
-                await investment.save();
 
                 // 4. Send Notification
                 await sendNotification(
                     user._id,
                     'ROI Payout Credited',
-                    `Your daily payout of ${investment.dailyPayoutAmount} has been credited for your investment.`,
+                    `Your daily payout of $${investment.dailyPayoutAmount} has been credited for your investment.`,
                     'success',
                     'low',
                     { investmentId: investment._id }
                 );
 
                 // Check if investment is completed
-                if (nextPayoutDate > investment.endDate) {
+                if (nextPayoutDate >= investment.endDate) {
                     investment.status = 'completed';
-                    await investment.save();
-                    
                     await sendNotification(
                         user._id,
                         'Investment Completed',
-                        `Your investment in the ${investment.plan} has reached its completion date.`,
+                        `Your investment has reached its completion date.`,
                         'success',
                         'normal',
                         { investmentId: investment._id }
                     );
                     console.log(`Investment ${investment._id} completed.`);
                 }
+
+                await investment.save();
 
             } catch (err) {
                 console.error(`Error processing investment ${investment._id}:`, err);

@@ -9,7 +9,11 @@ const auth = async (req, res, next) => {
         }
 
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_super_secret_jwt_key');
+        if (!process.env.JWT_SECRET) {
+            console.error('FATAL: JWT_SECRET is not set');
+            return res.status(500).json({ message: 'Server configuration error' });
+        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         
         // Fetch specific user fields, exclude password obviously (default behavior)
         const user = await User.findById(decoded.id).select('-password');
