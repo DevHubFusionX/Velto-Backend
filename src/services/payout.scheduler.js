@@ -1,169 +1,195 @@
 const cron = require('node-cron');
+const mongoose = require('mongoose');
 const UserInvestment = require('../models/UserInvestment');
 const User = require('../models/User');
 const Payout = require('../models/Payout');
 const Transaction = require('../models/Transaction');
 const Investment = require('../models/Investment');
 
-/**
- * Process all due payouts
- * Runs hourly to distribute daily returns to users
- */
-const processPayouts = async () => {
-    try {
-        console.log('[Payout Scheduler] Running payout processor...');
+// Prevent concurrent runs
+let isPayoutRunning = false;
+let isReferralRunning = false;
 
+const processPayouts = async () => {
+    if (isPayoutRunning) {
+        console.log('[Payout Scheduler] Already running, skipping...');
+        return;
+    }
+    isPayoutRunning = true;
+
+    try {
         const now = new Date();
 
-        // Find all active investments with due payouts
         const dueInvestments = await UserInvestment.find({
             status: 'active',
             nextPayoutDate: { $lte: now }
-        }).populate('user plan');
+        }).populate('user', 'email totalBalance totalReturns')
+          .populate('plan', 'name');
 
-        console.log(`[Payout Scheduler] Found ${dueInvestments.length} investments due for payout`);
+        if (dueInvestments.length === 0) {
+            console.log('[Payout Scheduler] No payouts due.');
+            return;
+        }
+
+        console.log(`[Payout Scheduler] Processing ${dueInvestments.length} due investments...`);
+
+        let totalPaid = 0;
+        let processed = 0;
 
         for (const investment of dueInvestments) {
+            const session = await mongoose.startSession();
+            session.startTransaction();
+
             try {
-                // Check if investment has matured
-                if (new Date(investment.endDate) <= now) {
-                    // Mark as completed
-                    investment.status = 'completed';
-                    await investment.save();
+                // Re-fetch investment inside transaction to prevent double-pay race condition
+                const fresh = await UserInvestment.findOne({
+                    _id: investment._id,
+                    status: 'active',
+                    nextPayoutDate: { $lte: now }
+                }).session(session);
 
-                    // Create completion payout record
-                    await Payout.create({
-                        user: investment.user._id,
-                        investment: investment._id,
-                        amount: 0,
-                        type: 'completion',
-                        notes: 'Investment matured and completed'
-                    });
-
-                    console.log(`[Payout Scheduler] Completed investment ${investment._id}`);
+                if (!fresh) {
+                    // Already processed by another instance
+                    await session.abortTransaction();
+                    session.endSession();
                     continue;
                 }
 
-                // Process payout — amount is frozen at invest time based on user's invested amount
-                const payoutAmount = investment.dailyPayoutAmount;
+                const payoutAmount = fresh.dailyPayoutAmount;
+                const isLastPayout = new Date(fresh.endDate) <= new Date(fresh.nextPayoutDate.getTime() + 24 * 60 * 60 * 1000);
+                const nextPayoutDate = new Date(fresh.nextPayoutDate.getTime() + 24 * 60 * 60 * 1000);
 
-                // Update user balance
-                investment.user.totalBalance = (investment.user.totalBalance || 0) + payoutAmount;
-                investment.user.totalReturns = (investment.user.totalReturns || 0) + payoutAmount;
-                await investment.user.save();
+                // Update investment atomically
+                await UserInvestment.findByIdAndUpdate(fresh._id, {
+                    $inc: { totalPayoutReceived: payoutAmount },
+                    $set: {
+                        nextPayoutDate,
+                        status: isLastPayout ? 'completed' : 'active'
+                    }
+                }, { session });
 
-                // Advance nextPayoutDate by exactly 1 day and accumulate total received
-                const nextDate = new Date(investment.nextPayoutDate.getTime() + 24 * 60 * 60 * 1000);
-                investment.totalPayoutReceived = (investment.totalPayoutReceived || 0) + payoutAmount;
-                investment.nextPayoutDate = nextDate;
-
-                // Mark completed if this was the last payout
-                if (nextDate >= investment.endDate) {
-                    investment.status = 'completed';
-                }
-
-                await investment.save();
+                // Credit user balance atomically
+                await User.findByIdAndUpdate(fresh.user, {
+                    $inc: { totalBalance: payoutAmount, totalReturns: payoutAmount }
+                }, { session });
 
                 // Create payout record
-                await Payout.create({
-                    user: investment.user._id,
-                    investment: investment._id,
+                await Payout.create([{
+                    user: fresh.user,
+                    investment: fresh._id,
                     amount: payoutAmount,
-                    type: 'daily',
-                    notes: `Daily payout — invested: $${investment.amount}, daily rate: $${payoutAmount}`
-                });
+                    type: isLastPayout ? 'final' : 'daily',
+                    notes: `${isLastPayout ? 'Final' : 'Daily'} payout — $${payoutAmount} | Plan: ${investment.plan?.name || 'Investment'}`
+                }], { session });
 
-                // Create Transaction Record (for user history)
-                await Transaction.create({
-                    user: investment.user._id,
+                // Create transaction for user history
+                await Transaction.create([{
+                    user: fresh.user,
                     type: 'Investment Return',
                     amount: payoutAmount,
                     status: 'Completed',
-                    reference: `ROI-${investment._id}-${Date.now()}`,
-                    description: `Daily ROI for plan: ${investment.plan ? investment.plan.name : 'Investment'}`,
-                });
+                    reference: `ROI-${fresh._id}-${Date.now()}`,
+                    description: `${isLastPayout ? 'Final' : 'Daily'} ROI — ${investment.plan?.name || 'Investment'}`
+                }], { session });
 
-                console.log(`[Payout Scheduler] Paid $${payoutAmount} to user ${investment.user.email} for investment ${investment._id}`);
-            } catch (error) {
-                console.error(`[Payout Scheduler] Error processing investment ${investment._id}:`, error);
+                await session.commitTransaction();
+                session.endSession();
+
+                totalPaid += payoutAmount;
+                processed++;
+
+                console.log(`[Payout Scheduler] ✅ Paid $${payoutAmount} to ${investment.user?.email}${isLastPayout ? ' (FINAL)' : ''}`);
+            } catch (err) {
+                await session.abortTransaction();
+                session.endSession();
+                console.error(`[Payout Scheduler] ❌ Failed investment ${investment._id}:`, err.message);
             }
         }
 
-        console.log('[Payout Scheduler] Payout processing completed');
-    } catch (error) {
-        console.error('[Payout Scheduler] Fatal error in payout processor:', error);
+        console.log(`[Payout Scheduler] Done — ${processed} payouts, $${totalPaid.toFixed(2)} total distributed.`);
+    } catch (err) {
+        console.error('[Payout Scheduler] Fatal error:', err.message);
+    } finally {
+        isPayoutRunning = false;
     }
 };
 
-/**
- * Process matured referral rewards
- * Unlocks rewards after 14 days if referrer has active investment
- */
 const processReferralRewards = async () => {
+    if (isReferralRunning) return;
+    isReferralRunning = true;
+
     try {
-        console.log('[Referral Scheduler] Running referral reward processor...');
         const now = new Date();
 
-        // Find pending referral rewards that have reached their unlock date
         const pendingRewards = await Transaction.find({
             type: 'Referral',
             status: 'Pending',
             unlockDate: { $lte: now }
         });
 
-        console.log(`[Referral Scheduler] Found ${pendingRewards.length} matured referral rewards to check`);
+        if (pendingRewards.length === 0) return;
+
+        console.log(`[Referral Scheduler] Processing ${pendingRewards.length} matured rewards...`);
+
+        // Batch check active investments for all referrers at once
+        const userIds = [...new Set(pendingRewards.map(r => r.user.toString()))];
+
+        const [activeOld, activeNew] = await Promise.all([
+            Investment.distinct('user', { user: { $in: userIds }, status: 'Active' }),
+            UserInvestment.distinct('user', { user: { $in: userIds }, status: 'active' })
+        ]);
+
+        const activeSet = new Set([
+            ...activeOld.map(id => id.toString()),
+            ...activeNew.map(id => id.toString())
+        ]);
 
         for (const reward of pendingRewards) {
             try {
-                const user = await User.findById(reward.user);
-                if (!user) continue;
+                const userId = reward.user.toString();
 
-                // Rule: Referrer must have an active investment to unlock
-                const hasActiveInvestment = (await Investment.exists({ user: user._id, status: 'Active' })) ||
-                    (await UserInvestment.exists({ user: user._id, status: 'active' }));
-
-                if (hasActiveInvestment) {
-                    // Unlock reward
-                    user.referralBalance -= reward.amount;
-                    user.totalBalance += reward.amount;
-                    await user.save();
-
-                    reward.status = 'Completed';
-                    reward.description = reward.description.replace('Pending', 'Unlocked');
-                    await reward.save();
-
-                    console.log(`[Referral Scheduler] ✅ Unlocked $${reward.amount} for user ${user.email}`);
-                } else {
-                    console.log(`[Referral Scheduler] ⏳ User ${user.email} has no active investment. Reward ${reward._id} remains pending.`);
+                if (!activeSet.has(userId)) {
+                    console.log(`[Referral Scheduler] ⏳ User ${userId} has no active investment — reward held.`);
+                    continue;
                 }
+
+                await User.findByIdAndUpdate(reward.user, {
+                    $inc: { totalBalance: reward.amount },
+                    $inc: { referralBalance: -reward.amount }
+                });
+
+                reward.status = 'Completed';
+                await reward.save();
+
+                console.log(`[Referral Scheduler] ✅ Unlocked $${reward.amount} for user ${userId}`);
             } catch (err) {
-                console.error(`[Referral Scheduler] Error processing reward ${reward._id}:`, err);
+                console.error(`[Referral Scheduler] ❌ Failed reward ${reward._id}:`, err.message);
             }
         }
-    } catch (error) {
-        console.error('[Referral Scheduler] Fatal error in referral processor:', error);
+    } catch (err) {
+        console.error('[Referral Scheduler] Fatal error:', err.message);
+    } finally {
+        isReferralRunning = false;
     }
 };
 
-/**
- * Initialize payout scheduler
- * Runs every hour
- */
 const initializeScheduler = () => {
-    // Run every hour at minute 0
-    cron.schedule('0 * * * *', async () => {
+    // Run every minute — checks are cheap, only processes investments that are actually due
+    cron.schedule('* * * * *', async () => {
         await processPayouts();
         await processReferralRewards();
     });
 
-    console.log('[Payout Scheduler] Initialized - Running every hour');
+    // Also run immediately on startup to catch any overdue payouts
+    setTimeout(async () => {
+        console.log('[Payout Scheduler] Running startup check...');
+        await processPayouts();
+        await processReferralRewards();
+    }, 3000);
 
-
+    console.log('[Payout Scheduler] Initialized - Running every minute');
 };
 
-/**
- * Manual trigger for payouts (for admin control)
- */
 const triggerManualPayout = async () => {
     console.log('[Payout Scheduler] Manual payout triggered by admin');
     await processPayouts();
